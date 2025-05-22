@@ -1,5 +1,6 @@
 from typing import TypedDict, List, Dict, Optional, Any
 
+
 class TravelAgentState(TypedDict):
     user_input: Optional[str]  # 사용자 입력
     messages: List[Dict[str, str]]  # 대화 기록
@@ -16,6 +17,7 @@ class TravelAgentState(TypedDict):
     session_id: Optional[str]  # 세션 ID
     itinerary_plan: Optional[str]  # 생성된 여행 계획
     context: Optional[Dict[str, Any]]  # 컨텍스트 정보
+
 
 def create_initial_state() -> TravelAgentState:
     """초기 상태 생성 함수"""
@@ -34,5 +36,5 @@ def create_initial_state() -> TravelAgentState:
         search_results=None,
         itinerary_plan=None,
         session_id=None,
-        context={}
-    ) 
+        context={},
+    )

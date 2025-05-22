@@ -10,6 +10,7 @@ from tripmind.services.session_manage_service import session_manage_service
 
 logger = logging.getLogger(__name__)
 
+
 def conversation_node(llm: ChatAnthropic, state: Dict[str, Any]) -> Dict[str, Any]:
     """검색 노드"""
     try:
@@ -20,57 +21,59 @@ def conversation_node(llm: ChatAnthropic, state: Dict[str, Any]) -> Dict[str, An
         config = state.get("config_data", {})
         session_id = config.get("thread_id", "default")
 
-        system_prompt = prompt_loader.load_prompt_template_from_yaml("conversation/v1.yaml")
+        system_prompt = prompt_loader.load_prompt_template_from_yaml(
+            "conversation/v1.yaml"
+        )
         user_input = state["user_input"]
-        base_prompt = ChatPromptTemplate.from_messages([
-            ("system", system_prompt),
-            MessagesPlaceholder(variable_name="chat_history"),
-            ("human", "{input}"),
-            MessagesPlaceholder(variable_name="agent_scratchpad")
-        ])
-        
+        base_prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", system_prompt),
+                MessagesPlaceholder(variable_name="chat_history"),
+                ("human", "{input}"),
+                MessagesPlaceholder(variable_name="agent_scratchpad"),
+            ]
+        )
+
         base_prompt = base_prompt.partial(
-            tools=str(tools),
-            tool_names=", ".join(tool_names)
+            tools=str(tools), tool_names=", ".join(tool_names)
         )
         memory = session_manage_service.get_session_memory(session_id)
         chat_history = memory.load_memory_variables({}).get("chat_history", [])
 
         lang_chain = (
-            RunnableMap({
-                "input": lambda x: x["input"],
-                "chat_history": lambda x: x.get("chat_history", []),
-                "agent_scratchpad": lambda x: x.get("agent_scratchpad", [])
-            })
+            RunnableMap(
+                {
+                    "input": lambda x: x["input"],
+                    "chat_history": lambda x: x.get("chat_history", []),
+                    "agent_scratchpad": lambda x: x.get("agent_scratchpad", []),
+                }
+            )
             | base_prompt
             | llm
             | StrOutputParser()
         )
 
         # LLM 호출
-        response = lang_chain.invoke({
-            "input": user_input,
-            "chat_history": chat_history,
-            "agent_scratchpad": []
-        })
-        
+        response = lang_chain.invoke(
+            {"input": user_input, "chat_history": chat_history, "agent_scratchpad": []}
+        )
+
         memory.save_context({"input": user_input}, {"output": response})
-        
-        
+
         # 메시지 추가
         if "messages" not in state:
             state["messages"] = []
-            
+
         state["messages"].append({"role": "assistant", "content": response})
-        
+
         # 응답과 함께 전체 상태 반환
         return {**state, "response": response}
-        
+
     except Exception as e:
         logger.error(f"General error: {str(e)}")
         logger.exception("Full stack trace:")
         error_message = f"[대화 생성 오류] {str(e)}"
-        
+
         # 오류 메시지를 포함한 상태 반환
         if "messages" not in state:
             state["messages"] = []

@@ -1,11 +1,11 @@
 from typing import List, Dict
 from tripmind.models.session import ConversationSession, ConversationMessage
 
+
 class ConversationHistoryService:
     def save_message(self, session: ConversationSession, role: str, content: str):
         """메시지 저장"""
         ConversationMessage.objects.create(session=session, role=role, content=content)
-    
 
     def get_conversation_history(self, session: ConversationSession) -> List[Dict]:
         """대화 기록 조회"""

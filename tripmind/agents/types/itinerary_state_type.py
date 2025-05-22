@@ -1,5 +1,6 @@
 from typing import Dict, List, Any, TypedDict
 
+
 class ItineraryState(TypedDict, total=False):
     user_input: str
     messages: List[Dict[str, str]]

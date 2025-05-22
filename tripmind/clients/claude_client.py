@@ -2,11 +2,12 @@ import os
 import anthropic
 from .base_llm_client import BaseLLMClient
 
+
 class ClaudeClient(BaseLLMClient):
     """
     Claude API 클라이언트
     """
-    
+
     def __init__(self):
         """
         API 키와 모델 정보 초기화
@@ -17,11 +18,13 @@ class ClaudeClient(BaseLLMClient):
         if api_key_value:
             print(f"API 키 길이: {len(api_key_value)}")
             print(f"API 키 마지막 문자: {api_key_value[-1]}")
-        
+
         self.api_key = api_key_value
         if not self.api_key:
-            raise ValueError("ANTHROPIC_API_KEY 환경 변수가 설정되지 않았습니다. .env 파일에 API 키를 추가하거나 환경 변수로 설정해주세요.")
-        
+            raise ValueError(
+                "ANTHROPIC_API_KEY 환경 변수가 설정되지 않았습니다. .env 파일에 API 키를 추가하거나 환경 변수로 설정해주세요."
+            )
+
         # 클라이언트 생성 시도
         try:
             self.client = anthropic.Anthropic(api_key=self.api_key)
@@ -29,16 +32,16 @@ class ClaudeClient(BaseLLMClient):
         except Exception as e:
             print(f"Anthropic 클라이언트 생성 오류: {str(e)}")
             raise
-            
+
         self.model = "claude-3-opus-20240229"
-    
+
     def generate_text(self, prompt: str) -> str:
         """
         텍스트 생성 요청
-        
+
         Args:
             prompt: 사용자 프롬프트
-                
+
         Returns:
             생성된 텍스트
         """
@@ -48,9 +51,7 @@ class ClaudeClient(BaseLLMClient):
                 model=self.model,
                 max_tokens=4000,
                 temperature=0.7,
-                messages=[
-                    {"role": "user", "content": prompt}
-                ]
+                messages=[{"role": "user", "content": prompt}],
             )
             print("텍스트 생성 요청 성공")
             return message.content[0].text

@@ -5,20 +5,23 @@ from ..itinerary_agent_graph import itinerary_graph
 from ..types.travel_agent_state_type import TravelAgentState
 from .base_agent_excutor import BaseAgentExcutor
 
+
 class ItineraryAgentExecutor(BaseAgentExcutor):
     """여행 일정 에이전트 실행기"""
-    
+
     def __init__(self):
         self.graph = itinerary_graph
-    
-    def process_prompt(self, prompt: str, session_id: str = "default") -> Dict[str, Any]:
+
+    def process_prompt(
+        self, prompt: str, session_id: str = "default"
+    ) -> Dict[str, Any]:
         """
         사용자 프롬프트 처리 및 응답 생성
-        
+
         Args:
             prompt: 사용자 입력
             session_id: 세션 ID
-            
+
         Returns:
             응답 및 상태 정보
         """
@@ -26,7 +29,7 @@ class ItineraryAgentExecutor(BaseAgentExcutor):
             # 초기 상태 설정
             state: TravelAgentState = {
                 "user_input": prompt,
-                "messages": []  # 빈 메시지 배열 초기화
+                "messages": [],  # 빈 메시지 배열 초기화
             }
             config = {
                 "configurable": {
@@ -44,26 +47,27 @@ class ItineraryAgentExecutor(BaseAgentExcutor):
                     state = {
                         **session_state,
                         "user_input": prompt,
-                        "messages": messages  # 필요하다면 여기서 메시지 업데이트
+                        "messages": messages,  # 필요하다면 여기서 메시지 업데이트
                     }
 
             except:
                 # 세션이 없으면 새로 시작
                 pass
-            
+
             # 그래프 실행 - session_id 인자 제거
             result = self.graph.invoke(state, config=config)
-            
+
             return {
                 "response": result.get("response", "응답을 생성하지 못했습니다."),
                 "messages": result.get("messages", []),
-                "context": result.get("context", {})
+                "context": result.get("context", {}),
             }
         except Exception as e:
             import traceback
+
             traceback.print_exc()  # 디버깅용 스택 트레이스 출력
             return {
                 "response": f"[여행 일정 생성 오류] {str(e)}",
                 "messages": [],
-                "context": {}
+                "context": {},
             }
