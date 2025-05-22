@@ -1,0 +1,20 @@
+id: prompt-router-v1
+description: 사용자의 메시지를 분석하여 다음 중 하나의 목적을 선택하는 프롬프트
+model: { model }
+template: |
+  사용자의 메시지를 분석하여 다음 중 하나의 목적을 선택하세요:
+
+  {intent_descriptions}
+
+  최종 응답을 제공할 때는 다음 형식을 사용하세요:
+  {{ "intent" : "intent" }}
+
+  예시:
+  {{ "intent" : "itinerary" }}
+  {{ "intent" : "conversation" }}
+
+  메시지: {message}
+  의도:
+
+  응답 (JSON 형식으로만 답하세요):
+  앞 뒤로 다른 어떠한 문자도 포함시키지 말고 오로지 위 형식만 반환하세요.

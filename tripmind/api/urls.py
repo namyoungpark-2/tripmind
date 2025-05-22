@@ -1,7 +1,7 @@
 from django.urls import path
 from tripmind.api.views.conversation_history_view import ConversationHistoryAPIView
-from tripmind.api.views.langgraph_api_view import LangGraphAPIView
 from tripmind.api.views.itinerary_api_view import (
+    ItineraryAPIView,
     ItineraryDetailAPIView,
     ItineraryShareAPIView,
     ItineraryShareRemoveAPIView,
@@ -17,14 +17,12 @@ urlpatterns = [
         ConversationHistoryAPIView.as_view(),
         name="conversation-history",
     ),
-    path("langgraph/", LangGraphAPIView.as_view(), name="langgraph"),
-    # 여행 일정 API
+    path("itinerary/", ItineraryAPIView.as_view(), name="itinerary"),
     path(
         "itinerary/<int:itinerary_id>/",
         ItineraryDetailAPIView.as_view(),
         name="itinerary-detail",
     ),
-    # 여행 일정 공유 API
     path(
         "itinerary/<int:itinerary_id>/share/",
         ItineraryShareAPIView.as_view(),
@@ -40,7 +38,6 @@ urlpatterns = [
         ItineraryPublicShareAPIView.as_view(),
         name="itinerary-public",
     ),
-    # 공개 공유 링크
     path(
         "share/itinerary/<uuid:share_id>/",
         PublicItineraryViewAPIView.as_view(),

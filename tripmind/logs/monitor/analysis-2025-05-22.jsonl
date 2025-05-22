@@ -23,3 +23,20 @@
 {"timestamp": "2025-05-22T11:58:07.579067", "node": "greeting_node", "response_length": 60, "issues": [], "score": 10.0, "session_id": "default"}
 {"timestamp": "2025-05-22T11:58:10.560604", "node": "greeting_node", "response_length": 60, "issues": [], "score": 10.0, "session_id": "default"}
 {"timestamp": "2025-05-22T11:58:11.718812", "node": "greeting_node", "response_length": 60, "issues": [], "score": 10.0, "session_id": "default"}
+{"timestamp": "2025-05-22T15:18:46.462340", "node": "greeting_node", "response_length": 60, "issues": [], "score": 10.0, "session_id": "default"}
+{"timestamp": "2025-05-22T15:23:56.370098", "node": "greeting_node", "response_length": 60, "issues": [], "score": 10.0, "session_id": "default"}
+{"timestamp": "2025-05-22T15:24:55.452946", "node": "greeting_node", "response_length": 60, "issues": [], "score": 10.0, "session_id": "default"}
+{"timestamp": "2025-05-22T15:27:33.762981", "node": "greeting_node", "response_length": 60, "issues": [], "score": 10.0, "session_id": "default"}
+{"timestamp": "2025-05-22T15:35:17.965967", "node": "greeting_node", "response_length": 60, "issues": [], "score": 10.0, "session_id": "default"}
+{"timestamp": "2025-05-22T15:38:14.034835", "node": "greeting_node", "response_length": 60, "issues": [], "score": 10.0, "session_id": "default"}
+{"timestamp": "2025-05-22T15:38:36.490940", "node": "greeting_node", "response_length": 60, "issues": [], "score": 10.0, "session_id": "default"}
+{"timestamp": "2025-05-22T15:39:33.267088", "node": "greeting_node", "response_length": 60, "issues": [], "score": 10.0, "session_id": "default"}
+{"timestamp": "2025-05-22T15:40:01.995775", "node": "greeting_node", "response_length": 60, "issues": [], "score": 10.0, "session_id": "default"}
+{"timestamp": "2025-05-22T15:42:53.467475", "node": "greeting_node", "response_length": 60, "issues": [], "score": 10.0, "session_id": "default"}
+{"timestamp": "2025-05-22T15:44:53.194580", "node": "greeting_node", "response_length": 60, "issues": [], "score": 10.0, "session_id": "default"}
+{"timestamp": "2025-05-22T15:45:04.967953", "node": "greeting_node", "response_length": 60, "issues": [], "score": 10.0, "session_id": "default"}
+{"timestamp": "2025-05-22T16:11:47.335394", "node": "conversation_node", "response_length": 182, "issues": [], "score": 10.0, "session_id": "default"}
+{"timestamp": "2025-05-22T16:20:11.969119", "node": "conversation_node", "response_length": 417, "issues": [], "score": 10.0, "session_id": "default"}
+{"timestamp": "2025-05-22T16:20:49.168294", "node": "conversation_node", "response_length": 445, "issues": [{"type": "사실주장", "detected": "사실 AI인 제게 감정이 있는 건 아니지만, 제가 도움이 된다는 걸 알면 뿌듯함을 느껴요.", "context": "사실 AI인 제게 감정이 있는 건 아니지만, 제가 도움이 된다는 걸 알면 뿌듯함을 느껴요.", "timestamp": "2025-05-22T16:20:49.168646"}], "score": 9.5, "session_id": "default"}
+{"timestamp": "2025-05-22T16:21:23.445341", "node": "conversation_node", "response_length": 459, "issues": [{"type": "사실주장", "detected": "사실 저는 AI라서 당신의 감정을 정확히 알 수는 없어요.", "context": "사실 저는 AI라서 당신의 감정을 정확히 알 수는 없어요.", "timestamp": "2025-05-22T16:21:23.445599"}], "score": 9.5, "session_id": "default"}
+{"timestamp": "2025-05-22T16:22:12.058357", "node": "itinerary_node", "response_length": 613, "issues": [], "score": 10.0, "session_id": "default"}

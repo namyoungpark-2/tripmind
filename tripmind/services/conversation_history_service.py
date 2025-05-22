@@ -22,3 +22,6 @@ class ConversationHistoryService:
             return True
         except ConversationSession.DoesNotExist:
             return False
+
+
+conversation_history_service = ConversationHistoryService()
