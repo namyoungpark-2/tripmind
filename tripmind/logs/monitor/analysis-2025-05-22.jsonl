@@ -1,0 +1,25 @@
+{"timestamp": "2025-05-22T00:05:00.545418", "node": "itinerary_node", "response_length": 45, "issues": [], "score": 10.0, "session_id": "default"}
+{"timestamp": "2025-05-22T00:05:32.516156", "node": "itinerary_node", "response_length": 51, "issues": [], "score": 10.0, "session_id": "default"}
+{"timestamp": "2025-05-22T00:06:07.393648", "node": "itinerary_node", "response_length": 69, "issues": [], "score": 10.0, "session_id": "default"}
+{"timestamp": "2025-05-22T00:07:45.762832", "node": "itinerary_node", "response_length": 37, "issues": [], "score": 10.0, "session_id": "default"}
+{"timestamp": "2025-05-22T00:09:13.389376", "node": "itinerary_node", "response_length": 101, "issues": [], "score": 10.0, "session_id": "default"}
+{"timestamp": "2025-05-22T00:29:45.175978", "node": "itinerary_node", "response_length": 819, "issues": [], "score": 10.0, "session_id": "default"}
+{"timestamp": "2025-05-22T00:37:01.645513", "node": "itinerary_node", "response_length": 1696, "issues": [], "score": 10.0, "session_id": "default"}
+{"timestamp": "2025-05-22T08:32:56.004198", "node": "place_search_node", "response_length": 511, "issues": [{"type": "전화번호", "detected": "02-453-6369", "context": "점 > 한식 > 감자탕\n   전화: 02-453-6369\n\n2. 유명한목동갈비\n   주소: ", "timestamp": "2025-05-22T08:32:56.004377"}, {"type": "전화번호", "detected": "02-2644-2471", "context": "> 육류,고기 > 갈비\n   전화: 02-2644-2471\n\n3. 원조유명한닭꼬치\n   주소:", "timestamp": "2025-05-22T08:32:56.004391"}, {"type": "전화번호", "detected": "02-887-1515", "context": "식점 > 한식 > 국밥\n   전화: 02-887-1515\n\n5. 유명식당\n   주소: 서울 ", "timestamp": "2025-05-22T08:32:56.004399"}, {"type": "전화번호", "detected": "02-6978-2100", "context": "고리: 음식점 > 한식\n   전화: 02-6978-2100\n\n\n\n참고: 지역 '서울'에 대한 ", "timestamp": "2025-05-22T08:32:56.004404"}], "score": 8.0, "session_id": "default"}
+{"timestamp": "2025-05-22T08:34:29.400793", "node": "itinerary_node", "response_length": 642, "issues": [], "score": 10.0, "session_id": "default"}
+{"timestamp": "2025-05-22T08:35:07.863668", "node": "itinerary_node", "response_length": 1051, "issues": [], "score": 10.0, "session_id": "default"}
+{"timestamp": "2025-05-22T08:40:37.484699", "node": "itinerary_node", "response_length": 79, "issues": [], "score": 10.0, "session_id": "default"}
+{"timestamp": "2025-05-22T08:47:36.774217", "node": "itinerary_node", "response_length": 1298, "issues": [], "score": 10.0, "session_id": "default"}
+{"timestamp": "2025-05-22T08:48:51.216229", "node": "place_search_node", "response_length": 116, "issues": [], "score": 10.0, "session_id": "default"}
+{"timestamp": "2025-05-22T08:49:02.664518", "node": "place_search_node", "response_length": 87, "issues": [], "score": 10.0, "session_id": "default"}
+{"timestamp": "2025-05-22T08:49:09.895511", "node": "place_search_node", "response_length": 501, "issues": [{"type": "전화번호", "detected": "031-211-8434", "context": "> 육류,고기 > 갈비\n   전화: 031-211-8434\n\n2. 가보정 1관\n   주소: 경", "timestamp": "2025-05-22T08:49:09.895583"}, {"type": "전화번호", "detected": "031-223-7893", "context": "> 한식 > 찌개,전골\n   전화: 031-223-7893\n\n4. 테라로사 광화문점\n   주소", "timestamp": "2025-05-22T08:49:09.895612"}, {"type": "전화번호", "detected": "031-234-6275", "context": "점 > 한식 > 해장국\n   전화: 031-234-6275\n\n\n\n더 자세한 정보나 다른 장소를", "timestamp": "2025-05-22T08:49:09.895622"}], "score": 8.5, "session_id": "default"}
+{"timestamp": "2025-05-22T08:49:50.111912", "node": "itinerary_node", "response_length": 769, "issues": [], "score": 10.0, "session_id": "default"}
+{"timestamp": "2025-05-22T11:55:57.726394", "node": "greeting_node", "response_length": 60, "issues": [], "score": 10.0, "session_id": "default"}
+{"timestamp": "2025-05-22T11:56:54.013882", "node": "itinerary_node", "response_length": 798, "issues": [], "score": 10.0, "session_id": "default"}
+{"timestamp": "2025-05-22T11:56:59.324435", "node": "sharing_node", "response_length": 38, "issues": [], "score": 10.0, "session_id": "default"}
+{"timestamp": "2025-05-22T11:57:33.318766", "node": "itinerary_node", "response_length": 846, "issues": [], "score": 10.0, "session_id": "default"}
+{"timestamp": "2025-05-22T11:57:51.582657", "node": "sharing_node", "response_length": 38, "issues": [], "score": 10.0, "session_id": "default"}
+{"timestamp": "2025-05-22T11:57:56.058175", "node": "greeting_node", "response_length": 60, "issues": [], "score": 10.0, "session_id": "default"}
+{"timestamp": "2025-05-22T11:58:07.579067", "node": "greeting_node", "response_length": 60, "issues": [], "score": 10.0, "session_id": "default"}
+{"timestamp": "2025-05-22T11:58:10.560604", "node": "greeting_node", "response_length": 60, "issues": [], "score": 10.0, "session_id": "default"}
+{"timestamp": "2025-05-22T11:58:11.718812", "node": "greeting_node", "response_length": 60, "issues": [], "score": 10.0, "session_id": "default"}
