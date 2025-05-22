@@ -12,4 +12,4 @@
 .env.test.local
 .env.production.local
 
-service_account.json
+service-account.json
