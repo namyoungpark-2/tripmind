@@ -17,7 +17,7 @@ class GoogleCalendarClient:
     def __init__(self):
         # 기본 서비스 계정 파일 경로 설정 (프로젝트 루트 기준)
         service_account_file = os.path.join(project_root, 'service-account.json')
-        self.calendar_id = os.getenv("GOOGLE_CALENDAR_ID") or '8rs6er50q4sa6gl48if4q6226k@group.calendar.google.com'
+        self.calendar_id = os.getenv("GOOGLE_CALENDAR_ID")
 
         credentials = service_account.Credentials.from_service_account_file(
             service_account_file or os.getenv("GOOGLE_CREDENTIALS_PATH"),

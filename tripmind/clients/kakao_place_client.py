@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 class KakaoPlaceClient:
     def __init__(self, ):
         # API 키 설정 및 검증
-        self.api_key = os.getenv("KAKAO_REST_KEY") or '7582a0567cfa228ec8c38f2e3dafe03a'
+        self.api_key = os.getenv("KAKAO_REST_KEY")
         
         # 디버깅용: API 키 확인 (첫 4자와 마지막 4자만 표시)
         if self.api_key:
