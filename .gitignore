@@ -5,3 +5,11 @@
 *.pyw
 *.pyz
 *.pywz
+
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+service_account.json
