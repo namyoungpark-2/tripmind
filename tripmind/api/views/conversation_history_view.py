@@ -1,8 +1,10 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from tripmind.services.session_manage_service import SessionManageService
-from tripmind.services.conversation_history_service import ConversationHistoryService
+from tripmind.services.session.session_manage_service import SessionManageService
+from tripmind.services.conversation.conversation_history_service import (
+    ConversationHistoryService,
+)
 
 
 class ConversationHistoryAPIView(APIView):

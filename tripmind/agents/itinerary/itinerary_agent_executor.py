@@ -1,9 +1,9 @@
 # tripmind/application/orchestration/itinerary_agent_executor.py
 from typing import Dict, Any
 
-from .itinerary_agent_graph import itinerary_graph
-from .types.itinerary_state_type import ItineraryState
-from ..base_agent_excutor import BaseAgentExcutor
+from tripmind.agents.itinerary.itinerary_agent_graph import itinerary_graph
+from tripmind.agents.itinerary.types.itinerary_state_type import ItineraryState
+from tripmind.agents.common.executor.base_agent_excutor import BaseAgentExcutor
 
 
 class ItineraryAgentExecutor(BaseAgentExcutor):

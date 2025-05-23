@@ -1,15 +1,18 @@
 from datetime import datetime
 from typing import Dict, Any, List
 
-from tripmind.services.external.base_calendar_service import BaseCalendarService
-from tripmind.clients.google_calendar_client import GoogleCalendarClient
+from tripmind.clients.calendar.google_calendar_client import GoogleCalendarClient
+from tripmind.services.calendar.base_calendar_service import BaseCalendarService
 
 
 class GoogleCalendarService(BaseCalendarService):
     SCOPES = ["https://www.googleapis.com/auth/calendar"]
 
-    def __init__(self):
-        self.client = GoogleCalendarClient()
+    def __init__(self, calendar_client: GoogleCalendarClient):
+        self.client = calendar_client
+
+    # def __init__(self, calendar_id: str, config_path: str):
+    #     self.client = GoogleCalendarClient(calendar_id, config_path)
 
     def add_event(
         self,

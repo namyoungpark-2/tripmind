@@ -6,7 +6,7 @@ from .nodes.ask_info_node import ask_info_node
 from .nodes.place_search_node import place_search_node
 from .nodes.calendar_node import calendar_node
 from .nodes.sharing_node import sharing_node
-from ..node_wrapper import node_wrapper
+from tripmind.agents.common.node.node_wrapper import node_wrapper
 from .itinerary_agent_llm import itinerary_agent_llm
 
 

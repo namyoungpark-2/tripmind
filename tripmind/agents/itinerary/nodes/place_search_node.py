@@ -1,13 +1,20 @@
 from typing import Dict, Any, List, Optional
+import os
 import re
 import logging
 from langchain_anthropic import ChatAnthropic
 from langchain_core.prompts import ChatPromptTemplate
 from tripmind.agents.itinerary.tools.place_search_tool import PlaceSearchTool
+from tripmind.services.place_search.kakao_place_search_service import (
+    KakaoPlaceSearchService,
+)
+from tripmind.clients.place_search.kakao_place_client import KakaoPlaceClient
 
 logger = logging.getLogger(__name__)
 
-place_search_tool = PlaceSearchTool()
+place_search_tool = PlaceSearchTool(
+    KakaoPlaceSearchService(KakaoPlaceClient(os.getenv("KAKAO_REST_KEY")))
+)
 
 
 def extract_location_from_text(text: str) -> Optional[str]:

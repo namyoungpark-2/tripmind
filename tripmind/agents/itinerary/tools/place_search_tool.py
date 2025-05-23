@@ -1,10 +1,7 @@
 from langchain.tools import Tool
 from typing import List
 
-from tripmind.services.external.base_place_search_service import PlaceSearchService
-from tripmind.services.external.kakao_place_search_service import (
-    kakao_place_search_service,
-)
+from tripmind.services.place_search.base_place_search_service import PlaceSearchService
 
 import logging
 
@@ -12,8 +9,8 @@ logger = logging.getLogger(__name__)
 
 
 class PlaceSearchTool:
-    def __init__(self, place_search_service: PlaceSearchService = None):
-        self.place_search_service = place_search_service or kakao_place_search_service
+    def __init__(self, place_search_service: PlaceSearchService):
+        self.place_search_service = place_search_service
 
     def search_places(self, query: str, location: str = None) -> str:
         """장소 검색 (도구 로직)"""

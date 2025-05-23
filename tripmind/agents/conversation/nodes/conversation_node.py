@@ -5,7 +5,7 @@ from langchain_core.output_parsers import StrOutputParser
 from typing import Dict, Any
 import logging
 
-from tripmind.services.session_manage_service import session_manage_service
+from tripmind.services.session.session_manage_service import session_manage_service
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +36,7 @@ def conversation_node(llm: ChatAnthropic, state: Dict[str, Any]) -> Dict[str, An
                     "input": lambda x: x["input"],
                     "chat_history": lambda x: x.get("chat_history", []),
                     "agent_scratchpad": lambda x: x.get("agent_scratchpad", []),
+                    "model": lambda x: x.get("model", llm.model),
                 }
             )
             | base_prompt
@@ -45,7 +46,12 @@ def conversation_node(llm: ChatAnthropic, state: Dict[str, Any]) -> Dict[str, An
 
         # LLM 호출
         response = lang_chain.invoke(
-            {"input": user_input, "chat_history": chat_history, "agent_scratchpad": []}
+            {
+                "input": user_input,
+                "chat_history": chat_history,
+                "agent_scratchpad": [],
+                "model": llm.model,
+            }
         )
 
         memory.save_context({"input": user_input}, {"output": response})

@@ -13,3 +13,5 @@
 .env.production.local
 
 service-account.json
+
+**/.DS_Store

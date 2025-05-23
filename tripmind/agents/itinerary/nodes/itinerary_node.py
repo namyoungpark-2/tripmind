@@ -1,13 +1,18 @@
+import os
 from langchain_anthropic import ChatAnthropic
 from tripmind.agents.itinerary.tools.place_search_tool import PlaceSearchTool
-from tripmind.agents.tool_callback_handler import ToolUsageCallbackHandler
-from tripmind.llm.prompt_loader import prompt_loader
-from tripmind.agents.itinerary.types.itinerary_state_type import ItineraryState
-from tripmind.services.external.kakao_place_search_service import (
-    kakao_place_search_service,
+from tripmind.agents.common.handler.tool_callback_handler import (
+    ToolUsageCallbackHandler,
 )
-from tripmind.services.session_manage_service import session_manage_service
+from tripmind.services.prompt.prompt_service import prompt_service
+from tripmind.agents.itinerary.types.itinerary_state_type import ItineraryState
+from tripmind.services.place_search.kakao_place_search_service import (
+    KakaoPlaceSearchService,
+)
+from tripmind.clients.place_search.kakao_place_client import KakaoPlaceClient
+from tripmind.services.session.session_manage_service import session_manage_service
 from typing import Dict, Any
+from pathlib import Path
 
 from langchain.agents import AgentExecutor
 from langchain.agents.format_scratchpad import format_to_openai_function_messages
@@ -16,6 +21,7 @@ from langchain.agents.output_parsers import OpenAIFunctionsAgentOutputParser
 import logging
 
 logger = logging.getLogger(__name__)
+PROMPT_DIR = Path(__file__).parent / "prompt_templates"
 
 
 def itinerary_node(llm: ChatAnthropic, state: ItineraryState) -> ItineraryState:
@@ -139,6 +145,9 @@ def itinerary_node(llm: ChatAnthropic, state: ItineraryState) -> ItineraryState:
 
 
 def get_itinerary_node_agent(llm: ChatAnthropic, session_id: str) -> Dict[str, Any]:
+    kakao_place_search_service = KakaoPlaceSearchService(
+        KakaoPlaceClient(os.getenv("KAKAO_REST_KEY"))
+    )
     place_search_tool = PlaceSearchTool(kakao_place_search_service)
 
     memory = session_manage_service.get_session_memory(session_id)
@@ -150,7 +159,9 @@ def get_itinerary_node_agent(llm: ChatAnthropic, session_id: str) -> Dict[str, A
     formatted_tools = "\n".join(tool_descriptions)
     tool_names = [tool.name for tool in tools]
 
-    system_prompt = prompt_loader.get_system_prompt("itinerary/v1.yaml")
+    system_prompt = prompt_service.get_system_prompt(
+        str(PROMPT_DIR / "itinerary/v1.yaml")
+    )
 
     agent = (
         {

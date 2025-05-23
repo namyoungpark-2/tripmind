@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch, MagicMock
 
-from tripmind.services.session_manage_service import SessionManageService
+from tripmind.services.session.session_manage_service import SessionManageService
 from tripmind.models.session import ConversationSession
 
 

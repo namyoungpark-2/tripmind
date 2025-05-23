@@ -15,14 +15,14 @@ from tripmind.api.serializers.itinerary_serializer import (
     ExternalShareSerializer,
 )
 from tripmind.models.itinerary import Itinerary, SharedItinerary
-from tripmind.services import session_manage_service
-from tripmind.services.itinerary_service import ItineraryService
+from tripmind.services.session.session_manage_service import session_manage_service
+from tripmind.services.itinerary.itinerary_service import ItineraryService
 from tripmind.agents.itinerary.itinerary_agent_executor import ItineraryAgentExecutor
 from tripmind.agents.conversation.conversation_agent_executor import (
     ConversationAgentExecutor,
 )
-from tripmind.agents.prompt_router.prompt_router_agent_excutor import (
-    PromptRouterAgentExcutor,
+from tripmind.agents.prompt_router.prompt_router_agent_executor import (
+    PromptRouterAgentExecutor,
 )
 from tripmind.agents.prompt_router.constants.intent_constants import Intent
 
@@ -48,8 +48,8 @@ class ItineraryAPIView(APIView):
         # 세션 가져오기 또는 생성
         session = session_manage_service.get_or_create_session(session_id)
         prompt = serializer.validated_data["message"]
-        prompt_router_agent_excutor = PromptRouterAgentExcutor()
-        router_result = prompt_router_agent_excutor.process_prompt(
+        prompt_router_agent_executor = PromptRouterAgentExecutor()
+        router_result = prompt_router_agent_executor.process_prompt(
             prompt=prompt,
             session_id=session_id,
         )

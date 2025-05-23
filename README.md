@@ -361,3 +361,14 @@ POST /api/tripmind/langgraph/
   "itinerary": "# 오사카 여행 일정 (3박 4일)\n..."
 }
 ```
+
+------------------------------------ㅍ
+
+모든 테스트 실행 :
+python tests/run_tests.py
+
+특정 테스트 파일실행 :
+python -m unittest tests.test_prompt_router_agent
+
+특정 테스트 케이스 실행 :
+python -m unittest tests.test_prompt_router_agent.TestPromptRouterAgent.test_process_prompt_itinerary_intent

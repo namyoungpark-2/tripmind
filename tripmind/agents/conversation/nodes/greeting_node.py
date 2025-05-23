@@ -2,12 +2,14 @@ from langchain_anthropic import ChatAnthropic
 from langchain_core.runnables import RunnableMap
 from langchain_core.output_parsers import StrOutputParser
 from typing import Dict, Any
+from pathlib import Path
 import logging
 
-from tripmind.llm.prompt_loader import prompt_loader
-from tripmind.services.session_manage_service import session_manage_service
+from tripmind.services.prompt.prompt_service import prompt_service
+from tripmind.services.session.session_manage_service import session_manage_service
 
 logger = logging.getLogger(__name__)
+PROMPT_DIR = Path(__file__).parent / "prompt_templates"
 
 
 def greeting_node(llm: ChatAnthropic, state: Dict[str, Any]) -> Dict[str, Any]:
@@ -20,7 +22,9 @@ def greeting_node(llm: ChatAnthropic, state: Dict[str, Any]) -> Dict[str, Any]:
         config = state.get("config_data", {})
         session_id = config.get("thread_id", "default")
 
-        system_prompt = prompt_loader.get_system_prompt("conversation/v1.yaml")
+        system_prompt = prompt_service.get_system_prompt(
+            str(PROMPT_DIR / "conversation/v1.yaml")
+        )
         user_input = state["user_input"]
 
         system_prompt = system_prompt.partial(

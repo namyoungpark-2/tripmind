@@ -2,7 +2,7 @@
 from typing import Dict, Any
 
 from .conversation_agent_graph import conversation_graph
-from ..base_agent_excutor import BaseAgentExcutor
+from ..common.executor.base_agent_excutor import BaseAgentExcutor
 
 
 class ConversationAgentExecutor(BaseAgentExcutor):

@@ -9,7 +9,7 @@ import uuid
 load_dotenv()
 
 # Django REST API URL
-API_URL = "http://127.0.0.1:8000/api/tripmind/langgraph/"  # Django 서버 URL 조정 필요
+API_URL = "http://127.0.0.1:8000/api/tripmind/itinerary/"  # Django 서버 URL 조정 필요
 
 # 앱 제목 설정
 st.set_page_config(page_title="TripMind - 여행 에이전트", page_icon="✈️")

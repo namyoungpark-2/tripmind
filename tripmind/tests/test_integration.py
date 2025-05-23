@@ -1,8 +1,8 @@
 import unittest
 from unittest.mock import patch
 
-from tripmind.agents.prompt_router.prompt_router_agent_excutor import (
-    PromptRouterAgentExcutor,
+from tripmind.agents.prompt_router.prompt_router_agent_executor import (
+    PromptRouterAgentExecutor,
 )
 from tripmind.agents.itinerary.itinerary_agent_executor import ItineraryAgentExecutor
 from tripmind.agents.prompt_router.constants.intent_constants import Intent
@@ -13,7 +13,9 @@ class TestIntegration(unittest.TestCase):
 
     def setUp(self):
         # 프롬프트 라우터 에이전트의 _classify 메서드 패치
-        self.router_classify_patch = patch.object(PromptRouterAgentExcutor, "_classify")
+        self.router_classify_patch = patch.object(
+            PromptRouterAgentExecutor, "_classify"
+        )
         self.mock_router_classify = self.router_classify_patch.start()
 
         # 여행 일정 에이전트의 process_prompt 메서드 패치
@@ -23,7 +25,7 @@ class TestIntegration(unittest.TestCase):
         self.mock_itinerary_process = self.itinerary_process_patch.start()
 
         # 에이전트 초기화
-        self.router_agent = PromptRouterAgentExcutor()
+        self.router_agent = PromptRouterAgentExecutor()
         self.itinerary_agent = ItineraryAgentExecutor()
 
     def tearDown(self):

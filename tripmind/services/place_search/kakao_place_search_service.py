@@ -1,7 +1,7 @@
 from typing import Dict, List, Any, Optional
 
-from tripmind.services.external.base_place_search_service import PlaceSearchService
-from tripmind.clients.kakao_place_client import KakaoPlaceClient
+from tripmind.services.place_search.base_place_search_service import PlaceSearchService
+from tripmind.clients.place_search.kakao_place_client import KakaoPlaceClient
 
 
 class KakaoPlaceSearchService(PlaceSearchService):
@@ -9,8 +9,8 @@ class KakaoPlaceSearchService(PlaceSearchService):
     Kakao 로컬 검색 API를 이용해 장소 검색을 수행하는 Adapter
     """
 
-    def __init__(self):
-        self.client = KakaoPlaceClient()
+    def __init__(self, kakao_place_client: KakaoPlaceClient):
+        self.client = kakao_place_client
 
     def search_places(
         self, query: str, location: Optional[str] = None
@@ -96,7 +96,3 @@ class KakaoPlaceSearchService(PlaceSearchService):
             }
 
         return {}
-
-
-# 싱글톤 패턴 적용
-kakao_place_search_service = KakaoPlaceSearchService()

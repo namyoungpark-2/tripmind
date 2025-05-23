@@ -8,12 +8,12 @@ from tripmind.agents.itinerary.itinerary_agent_executor import (
     ItineraryAgentExecutor,
 )
 from tripmind.agents.prompt_router.constants.intent_constants import Intent
-from tripmind.agents.prompt_router.prompt_router_agent_excutor import (
-    PromptRouterAgentExcutor,
+from tripmind.agents.prompt_router.prompt_router_agent_executor import (
+    PromptRouterAgentExecutor,
 )
 from tripmind.api.serializers.itinerary_serializer import MessageSerializer
-from tripmind.services.itinerary_service import LangGraphService
-from tripmind.services.session_manage_service import session_manage_service
+from tripmind.services.itinerary.itinerary_service import LangGraphService
+from tripmind.services.session.session_manage_service import session_manage_service
 
 
 class LangGraphAPIView(APIView):
@@ -37,7 +37,7 @@ class LangGraphAPIView(APIView):
         # 세션 가져오기 또는 생성
         session = session_manage_service.get_or_create_session(session_id)
         prompt = serializer.validated_data["message"]
-        prompt_router_agent_excutor = PromptRouterAgentExcutor()
+        prompt_router_agent_excutor = PromptRouterAgentExecutor()
         router_result = prompt_router_agent_excutor.process_prompt(
             prompt=prompt,
             session_id=session_id,

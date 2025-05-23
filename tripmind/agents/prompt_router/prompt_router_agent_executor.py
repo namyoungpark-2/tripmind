@@ -1,20 +1,22 @@
 # tripmind/agents/excutors/prompt_router_agent_excutor.py
 import json
 from typing import Dict, Any
+from pathlib import Path
 
-
-from ..base_agent_excutor import BaseAgentExcutor
+from ..common.executor.base_agent_excutor import BaseAgentExcutor
 from .types.prompt_router_state_type import PromptRouterState
 from .constants.intent_constants import (
     Intent,
     INTENT_DESCRIPTIONS,
     INTENT_TO_NODE_MAP,
 )
-from tripmind.llm.prompt_loader import prompt_loader
+from tripmind.services.prompt.prompt_service import prompt_service
 from .prompt_router_agent_llm import prompt_router_agent_llm
 
+PROMPT_DIR = Path(__file__).parent / "prompt_templates"
 
-class PromptRouterAgentExcutor(BaseAgentExcutor):
+
+class PromptRouterAgentExecutor(BaseAgentExcutor):
     """
     사용자 입력의 목적(intent)을 분류하는 에이전트 실행기
     """
@@ -28,14 +30,18 @@ class PromptRouterAgentExcutor(BaseAgentExcutor):
             ]
         )
 
-        prompt = prompt_loader.get_prompt_template(
-            "prompt_router/v1.yaml",
+        prompt = prompt_service.get_prompt_template(
+            str(PROMPT_DIR / "prompt_router/v1.yaml"),
             {
                 "intent_descriptions": intent_descriptions,
                 "model": prompt_router_agent_llm.get_llm().model,
             },
         )
 
+        print(f"prompt: {prompt}")
+        print(
+            f"prompt_router_agent_llm.get_llm().model: {prompt_router_agent_llm.get_llm().model}"
+        )
         # LLMChain 대신 RunnableSequence(|) 사용
         self.chain = prompt | prompt_router_agent_llm.get_llm()
 

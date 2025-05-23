@@ -1,12 +1,11 @@
 from typing import List
 from langchain.tools import Tool
-from tripmind.services.external.base_calendar_service import BaseCalendarService
-from tripmind.services.external.google_calendar_service import GoogleCalendarService
+from tripmind.services.calendar.base_calendar_service import BaseCalendarService
 
 
 class CalendarTool:
-    def __init__(self, calendar_service: BaseCalendarService = None):
-        self.calendar_service = calendar_service or GoogleCalendarService()
+    def __init__(self, calendar_service: BaseCalendarService):
+        self.calendar_service = calendar_service
 
     def add_calendar_event(
         self,

@@ -3,6 +3,7 @@ import os
 from typing import Dict, Any, List
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
+from tripmind.clients.calendar.base_calendar_client import BaseCalendarClient
 
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
@@ -10,13 +11,16 @@ project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..
 SCOPES = ["https://www.googleapis.com/auth/calendar"]
 
 
-class GoogleCalendarClient:
+class GoogleCalendarClient(BaseCalendarClient):
     """구글 캘린더 API 클라이언트 (로우레벨 인프라)"""
 
-    def __init__(self):
+    def __init__(self, calendar_id: str, config_path: str):
         # 기본 서비스 계정 파일 경로 설정 (프로젝트 루트 기준)
-        service_account_file = os.path.join(project_root, "service-account.json")
-        self.calendar_id = os.getenv("GOOGLE_CALENDAR_ID")
+        # service_account_file = os.path.join(project_root, "service-account.json")
+        # self.calendar_id = os.getenv("GOOGLE_CALENDAR_ID")
+
+        service_account_file = config_path
+        self.calendar_id = calendar_id
 
         credentials = service_account.Credentials.from_service_account_file(
             service_account_file or os.getenv("GOOGLE_CREDENTIALS_PATH"), scopes=SCOPES

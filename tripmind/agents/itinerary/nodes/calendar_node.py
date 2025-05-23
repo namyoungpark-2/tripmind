@@ -1,16 +1,23 @@
 from typing import Dict, Any
+import os
 import re
 import logging
 from datetime import datetime, timedelta
 from langchain_anthropic import ChatAnthropic
 from langchain_core.prompts import ChatPromptTemplate
 from tripmind.agents.itinerary.tools.calendar_tool import CalendarTool
+from tripmind.clients.calendar.google_calendar_client import GoogleCalendarClient
+from tripmind.services.calendar.google_calendar_service import GoogleCalendarService
 
 logger = logging.getLogger(__name__)
 
 # 캘린더 도구 초기화 (오류 처리 추가)
 try:
-    calendar_tool = CalendarTool()
+    calendar_id = os.getenv("GOOGLE_CALENDAR_ID")
+    config_path = os.getenv("GOOGLE_CREDENTIALS_PATH")
+    calendar_client = GoogleCalendarClient(calendar_id, config_path)
+    calendar_service = GoogleCalendarService(calendar_client)
+    calendar_tool = CalendarTool(calendar_service)
     calendar_available = True
 except Exception as e:
     logger.warning(f"캘린더 도구 초기화 실패: {str(e)}")

@@ -1,6 +1,6 @@
 from typing import List, Dict, Optional, Any
 
-from tripmind.agents.base_state_type import BaseState
+from tripmind.agents.common.state.base_state_type import BaseState
 
 
 class ItineraryState(BaseState):

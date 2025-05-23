@@ -4,7 +4,7 @@ from .nodes.router_node import router_node
 from .nodes.greeting_node import greeting_node
 from .nodes.conversation_node import conversation_node
 from .types.conversation_state_type import ConversationState
-from ..node_wrapper import node_wrapper
+from ..common.node.node_wrapper import node_wrapper
 from .conversation_agent_llm import conversation_agent_llm
 
 # 이후 일상 대화에 필요한 여러 도구들 추가 (ex: 장소 검색, 날씨 정보, 뉴스 등)

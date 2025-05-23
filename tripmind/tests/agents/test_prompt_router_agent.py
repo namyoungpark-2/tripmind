@@ -1,8 +1,8 @@
 import unittest
 from unittest.mock import patch, MagicMock
 
-from tripmind.agents.prompt_router.prompt_router_agent_excutor import (
-    PromptRouterAgentExcutor,
+from tripmind.agents.prompt_router.prompt_router_agent_executor import (
+    PromptRouterAgentExecutor,
 )
 from tripmind.agents.prompt_router.constants.intent_constants import Intent
 
@@ -28,11 +28,11 @@ class TestPromptRouterAgent(unittest.TestCase):
         self.mock_llm_getter.return_value = self.mock_llm
 
         # _classify 메서드를 따로 모킹
-        self.classify_patch = patch.object(PromptRouterAgentExcutor, "_classify")
+        self.classify_patch = patch.object(PromptRouterAgentExecutor, "_classify")
         self.mock_classify = self.classify_patch.start()
 
         # 에이전트 초기화
-        self.agent = PromptRouterAgentExcutor()
+        self.agent = PromptRouterAgentExecutor()
 
     def tearDown(self):
         # 패치 종료

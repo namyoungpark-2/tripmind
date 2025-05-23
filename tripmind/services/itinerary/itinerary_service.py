@@ -1,6 +1,6 @@
 from typing import Dict
 
-from tripmind.agents.base_agent_excutor import BaseAgentExcutor
+from tripmind.agents.common.executor.base_agent_excutor import BaseAgentExcutor
 
 
 class ItineraryService:

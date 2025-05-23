@@ -13,7 +13,7 @@ sys.path.insert(0, project_root)
 
 # Django 설정 로드 (필요한 경우)
 try:
-    from tripmind.tests.test_settings import setup_django
+    from tripmind.tests.settings.test_settings import setup_django
 
     setup_django()
 except ImportError:
