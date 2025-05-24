@@ -120,6 +120,16 @@ class ItineraryAPIView(View):
             yield f"data: {json.dumps(error_response)}\n\n"
 
 
+# LLM multi Agent 에서 사용되는 것이 아니라 별도의 API로 사용될 수 있는 List
+# 해당 서버가 아닌 별도의 JAVA Web Server 에서 동작하도록 구현하여 서비스를 나누면 좋을 것 같음
+# 하위 API View들은 추후에 동작하도록 구현될 view List
+# 일정 상세 조회/수정/삭제 API
+# 일정 공유 API
+# 일정 공유 해제 API
+# 일정 공개 공유 설정 API
+# 공개된 여행 일정 조회 API
+
+
 class ItineraryDetailAPIView(View):
     """여행 일정 상세 조회/수정/삭제 API"""
 

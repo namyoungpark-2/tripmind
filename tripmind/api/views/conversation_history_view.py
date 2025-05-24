@@ -13,7 +13,7 @@ class ConversationHistoryAPIView(APIView):
     def get(self, request, *args, **kwargs):
         session_id = request.session.session_key or "default"
         session_manage_service = SessionManageService()
-        session = session_manage_service.get_session(session_id)
+        session = session_manage_service.get_or_create_session(session_id)
         conversation_history_service = ConversationHistoryService()
         history = conversation_history_service.get_conversation_history(session)
         return Response({"history": history}, status=status.HTTP_200_OK)
@@ -21,7 +21,7 @@ class ConversationHistoryAPIView(APIView):
     def delete(self, request, *args, **kwargs):
         session_id = request.session.session_key or "default"
         session_manage_service = SessionManageService()
-        session = session_manage_service.get_session(session_id)
+        session = session_manage_service.get_or_create_session(session_id)
         conversation_history_service = ConversationHistoryService()
         success = conversation_history_service.clear_conversation(session)
         if success:
