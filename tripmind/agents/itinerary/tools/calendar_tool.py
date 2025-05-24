@@ -5,6 +5,9 @@ from tripmind.agents.itinerary.types.calendar_tool_type import (
     AddCalendarEventInput,
     ListCalendarEventsInput,
 )
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def get_calendar_tools(calendar_service: BaseCalendarService) -> List[StructuredTool]:
@@ -25,8 +28,10 @@ def get_calendar_tools(calendar_service: BaseCalendarService) -> List[Structured
                 location=location,
                 description=description,
             )
+            logger.info(f"일정 추가 결과: {result}")
             return f"일정이 성공적으로 추가되었습니다: {result['title']} ({date} {start_time}~{end_time})"
         except Exception as e:
+            logger.error(f"일정 추가 중 오류가 발생했습니다: {str(e)}")
             return f"일정 추가 중 오류가 발생했습니다: {str(e)}"
 
     def list_calendar_events_func(start_date: str, end_date: str) -> str:
@@ -36,6 +41,7 @@ def get_calendar_tools(calendar_service: BaseCalendarService) -> List[Structured
                 end_date=end_date,
             )
             if not events:
+                logger.info(f"{start_date}부터 {end_date}까지 일정이 없습니다.")
                 return f"{start_date}부터 {end_date}까지 일정이 없습니다."
 
             result = f"{start_date}부터 {end_date}까지의 일정:\n\n"
@@ -45,8 +51,10 @@ def get_calendar_tools(calendar_service: BaseCalendarService) -> List[Structured
                 if event.get("location"):
                     result += f"   장소: {event['location']}\n"
                 result += "\n"
+            logger.info(f"{start_date}부터 {end_date}까지의 일정: {result}")
             return result
         except Exception as e:
+            logger.error(f"일정 조회 중 오류가 발생했습니다: {str(e)}")
             return f"일정 조회 중 오류가 발생했습니다: {str(e)}"
 
     return [

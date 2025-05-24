@@ -1,14 +1,22 @@
 from typing import Dict
 import re
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def extract_travel_info(text: str) -> Dict[str, str]:
-    info = {}
+    info = {
+        "destination": "",
+        "duration": "",
+        "travelers": "",
+        "budget": "",
+    }
 
-    destination_pattern = r"([가-힣a-zA-Z]+)[,\s]?\s?([가-힣a-zA-Z]+)"
+    destination_pattern = r"([가-힣a-zA-Z]+)[\s]?(?:지역)"
     destination_match = re.search(destination_pattern, text)
     if destination_match:
-        info["destination"] = destination_match.group(0)
+        info["destination"] = destination_match.group(1)
 
     duration_patterns = [
         r"(\d+)[박]?\s?(\d+)?[일]?",

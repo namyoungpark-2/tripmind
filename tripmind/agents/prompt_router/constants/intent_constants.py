@@ -2,6 +2,7 @@ from enum import Enum
 
 
 class Intent(str, Enum):
+    CLASSIFY_INTENT = "classify_intent"
     ITINERARY = "itinerary"
     CONVERSATION = "conversation"
     GREETING = "greeting"
@@ -14,6 +15,7 @@ class Intent(str, Enum):
 
 # 의도별 설명
 INTENT_DESCRIPTIONS = {
+    Intent.CLASSIFY_INTENT: "의도 분류",
     Intent.ITINERARY: "여행 일정 짜기",
     Intent.CONVERSATION: "일반적인 대화",
     Intent.GREETING: "인사",
@@ -55,12 +57,12 @@ INTENT_KEYWORDS = {
 
 # 의도와 노드 매핑
 INTENT_TO_NODE_MAP = {
-    Intent.ITINERARY: "itinerary",
-    Intent.CONVERSATION: "conversation",
-    Intent.PLACE_SEARCH: "place_search",
-    Intent.SHARING: "sharing",
-    Intent.CALENDAR: "calendar",
+    Intent.ITINERARY: "ask_info_node",
+    Intent.CONVERSATION: "conversation_node",
+    Intent.PLACE_SEARCH: "ask_info_node",
+    Intent.SHARING: "sharing_node",
+    Intent.CALENDAR: "ask_info_node",
     Intent.END: "end",
     Intent.UNKNOWN: "classify_intent_node",
-    Intent.GREETING: "greeting",
+    Intent.GREETING: "greeting_node",
 }

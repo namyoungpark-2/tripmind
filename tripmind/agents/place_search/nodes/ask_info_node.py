@@ -1,103 +1,13 @@
-from typing import Dict
-import re
 from tripmind.agents.place_search.types.place_search_state_type import PlaceSearchState
-from tripmind.agents.place_search.types.place_info_type import PlaceInfo
-
-
-def parse_place_info(prompt: str) -> Dict[str, str]:
-    info = PlaceInfo(
-        location=None,  # 위치
-        category=None,  # 카테고리 (맛집, 카페, 관광지 등)
-        subcategory=None,  # 세부 카테고리 (한식, 일식, 카페 등)
-        mood=None,  # 분위기 (로맨틱, 가족, 친구 등)
-        price_range=None,  # 가격대
-        count=None,  # 검색 결과 개수
-    )
-
-    location_patterns = [
-        r"서울|부산|인천|대구|광주|대전|울산|세종|경기|강원|충북|충남|전북|전남|경북|경남|제주",
-        r"([가-힣]+구|시|군|읍|면|동)",
-    ]
-
-    for pattern in location_patterns:
-        match = re.search(pattern, prompt)
-        if match:
-            info["location"] = match.group(0)
-            break
-
-    category_patterns = {
-        "맛집": ["맛집", "식당", "음식점", "레스토랑"],
-        "카페": ["카페", "커피숍", "디저트"],
-        "관광지": ["관광지", "명소", "볼거리", "여행지"],
-        "쇼핑": ["쇼핑", "마트", "시장", "상가"],
-    }
-
-    for category, patterns in category_patterns.items():
-        if any(pattern in prompt for pattern in patterns):
-            info["category"] = category
-            break
-
-    if info["category"] == "맛집":
-        subcategory_patterns = {
-            "한식": ["한식", "한국음식", "한국料理"],
-            "일식": ["일식", "일본음식", "일본料理", "초밥", "스시"],
-            "중식": ["중식", "중국음식", "중국料理"],
-            "양식": ["양식", "서양음식", "이탈리안", "프렌치"],
-            "카페": ["카페", "디저트", "브런치"],
-        }
-
-        for subcategory, patterns in subcategory_patterns.items():
-            if any(pattern in prompt for pattern in patterns):
-                info["subcategory"] = subcategory
-                break
-
-    mood_patterns = {
-        "로맨틱": ["로맨틱", "데이트", "커플"],
-        "가족": ["가족", "아이", "어린이"],
-        "친구": ["친구", "단체", "모임"],
-        "비즈니스": ["비즈니스", "회의", "미팅"],
-    }
-
-    for mood, patterns in mood_patterns.items():
-        if any(pattern in prompt for pattern in patterns):
-            info["mood"] = mood
-            break
-
-    price_patterns = {
-        "저가": ["저렴", "싼", "저가", "가성비"],
-        "중가": ["보통", "적당", "중가"],
-        "고가": ["고급", "비싼", "고가", "럭셔리"],
-    }
-
-    for price, patterns in price_patterns.items():
-        if any(pattern in prompt for pattern in patterns):
-            info["price_range"] = price
-            break
-
-    count_patterns = {
-        "1": ["1개", "1개만", "1개만 추천"],
-        "2": ["2개", "2개만", "2개만 추천"],
-        "3": ["3개", "3개만", "3개만 추천"],
-        "4": ["4개", "4개만", "4개만 추천"],
-        "5": ["5개", "5개만", "5개만 추천"],
-        "6": ["6개", "6개만", "6개만 추천"],
-        "7": ["7개", "7개만", "7개만 추천"],
-        "8": ["8개", "8개만", "8개만 추천"],
-        "9": ["9개", "9개만", "9개만 추천"],
-        "10": ["10개", "10개만", "10개만 추천"],
-    }
-
-    for count, patterns in count_patterns.items():
-        if any(pattern in prompt for pattern in patterns):
-            info["count"] = count
-            break
-
-    return info
+from tripmind.agents.place_search.utils.parser import parse_place_info
 
 
 def ask_info_node(state: PlaceSearchState) -> PlaceSearchState:
+    user_input = state.get("user_input", "")
     parsed_info = parse_place_info(state.get("user_input", ""))
-
+    config_data = state.get("config_data", {})
+    messages = state.get("messages", [])
+    context = state.get("context", {})
     missing_info = []
 
     if not parsed_info["location"]:
@@ -111,17 +21,27 @@ def ask_info_node(state: PlaceSearchState) -> PlaceSearchState:
 
     if missing_info:
         msg = f"더 정확한 추천을 위해 {', '.join(missing_info)}를 알려주실 수 있나요?"
-        messages = state.get("messages", []) + [{"role": "assistant", "content": msg}]
+        messages = messages + [{"role": "assistant", "content": msg}]
+
         return PlaceSearchState(
+            user_input=user_input,
+            config_data=config_data,
             messages=messages,
             parsed_info=parsed_info,
-            context=state.get("context", {}),
+            context=context,
             next_node="place_search",
+            streaming={
+                "message": msg,
+                "current_position": len(msg),
+                "is_complete": True,
+            },
         )
     else:
         return PlaceSearchState(
-            messages=state.get("messages", []),
-            parsed_info=state.get("parsed_info", {}),
-            context=state.get("context", {}),
+            user_input=user_input,
+            config_data=config_data,
+            messages=messages,
+            parsed_info=parsed_info,
+            context=context,
             next_node="place_search_node",
         )

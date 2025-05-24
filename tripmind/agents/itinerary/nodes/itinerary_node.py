@@ -1,9 +1,7 @@
 import os
-import re
 import time
 from tripmind.agents.itinerary.tools.calendar_tool import get_calendar_tools
 from tripmind.agents.itinerary.tools.place_search_tool import get_place_search_tools
-from tripmind.agents.itinerary.utils.extract_info import extract_travel_info
 from tripmind.clients.calendar.google_calendar_client import GoogleCalendarClient
 from tripmind.clients.llm.base_llm_client import BaseLLMClient
 from tripmind.services.calendar.google_calendar_service import GoogleCalendarService
@@ -13,180 +11,163 @@ from tripmind.services.place_search.kakao_place_search_service import (
     KakaoPlaceSearchService,
 )
 from tripmind.clients.place_search.kakao_place_client import KakaoPlaceClient
-from typing import Dict, Any
+from typing import Dict, Any, List
 from pathlib import Path
-from langchain.memory import ConversationBufferMemory
 from langchain.agents import AgentExecutor, create_structured_chat_agent
 import logging
-from anthropic import APIStatusError
+from tripmind.services.session.session_manage_service import session_manage_service
+from langchain.tools import StructuredTool
+from tripmind.agents.itinerary.tools.final_response_tool import FinalResponseTool
+from tripmind.services.sharing.sharing_service import sharing_service
 
 logger = logging.getLogger(__name__)
 PROMPT_DIR = Path(__file__).parent / "../prompt_templates"
 
-MAX_RETRIES = 3
-RETRY_DELAY = 2  # seconds
-
 
 def itinerary_node(llm_client: BaseLLMClient, state: ItineraryState) -> ItineraryState:
-    """일정 생성 노드"""
     try:
-        user_input = state.get("user_input", "")
-        context = state.get("context", {})
         session_id = state.get("config_data", {}).get("thread_id", "default")
         previous_results = state.get("previous_results", {})
         state["previous_results"] = previous_results
-        travel_info = extract_travel_info(user_input)
-        for key, value in travel_info.items():
-            if value:
-                context[key] = value
+
+        memory = session_manage_service.get_session_memory(
+            session_id,
+            memory_key="chat_history",
+            input_key="input",
+            output_key="output",
+        )
 
         full_prompt = _get_full_prompt(state)
 
-        agent_executor = get_itinerary_node_agent(llm_client, state)
+        place_search_tools = get_place_search_tools(
+            KakaoPlaceSearchService(KakaoPlaceClient(os.getenv("KAKAO_REST_KEY")))
+        )
+        calendar_tools = get_calendar_tools(
+            GoogleCalendarService(
+                GoogleCalendarClient(
+                    os.getenv("GOOGLE_CALENDAR_ID"),
+                    os.getenv("GOOGLE_CREDENTIALS_PATH"),
+                )
+            )
+        )
 
-        # 도구 설명과 이름 가져오기
-        tool_descriptions = [
-            f"Tool: {tool.name}\nDescription: {tool.description}\n"
-            for tool in agent_executor.tools
-        ]
-        formatted_tools = "\n".join(tool_descriptions)
-        tool_names = [tool.name for tool in agent_executor.tools]
+        tools = place_search_tools + calendar_tools + [FinalResponseTool]
+
+        tool_descriptions = "\n".join(
+            [f"Tool: {tool.name}\nDescription: {tool.description}\n" for tool in tools]
+        )
+        tool_names = [tool.name for tool in tools]
+
+        agent_executor = create_itinerary_node_agent(
+            llm_client, state, tools, tool_descriptions, tool_names
+        )
 
         config = {
             "configurable": {"session_id": session_id},
         }
 
-        for attempt in range(MAX_RETRIES):
-            try:
-                result = agent_executor.invoke(
-                    {
-                        "input": full_prompt,
-                        "chat_history": state.get("messages", []),
-                        "tools": formatted_tools,
-                        "tool_names": ", ".join(tool_names),
-                        "agent_scratchpad": [],
-                    },
-                    config=config,
-                )
-                break
-            except APIStatusError as e:
-                if "overloaded_error" in str(e) and attempt < MAX_RETRIES - 1:
-                    logger.warning(
-                        f"API 과부하 오류 발생. {RETRY_DELAY}초 후 재시도... (시도 {attempt + 1}/{MAX_RETRIES})"
-                    )
-                    time.sleep(RETRY_DELAY)
-                    continue
-                raise
+        result = agent_executor.invoke(
+            {
+                "input": full_prompt,
+                "chat_history": memory.load_memory_variables({}).get(
+                    "chat_history", []
+                ),
+                "tools": tool_descriptions,
+                "tool_names": ", ".join(tool_names),
+            },
+            config=config,
+        )
 
-        # 도구 실행 결과 추적
-        intermediate_steps = result.get("intermediate_steps", [])
-        print("[DEBUG] intermediate_steps:", intermediate_steps)
-
-        executed_tool_inputs = set()
-        tool_executions = []
-
-        for action, output in intermediate_steps:
-            key = (action.tool, str(action.tool_input))
-            if key in executed_tool_inputs:
-                final_response = "동일한 도구를 반복해서 사용하여 일정을 종료합니다."
-                state["messages"].append(
-                    {"role": "assistant", "content": final_response}
-                )
-                return {**state, "response": final_response}
-            executed_tool_inputs.add(key)
-            tool_executions.append(
-                {"tool": action.tool, "input": action.tool_input, "output": output}
-            )
-            print(f"[DEBUG] 도구 실행 결과: {action.tool} - {output}")
-
-        state["tool_executions"] = tool_executions
-
-        if "tool_usage" in state and state["tool_usage"]:
-            tool_usage_text = "\n\n[도구 사용 내역]\n"
-            for i, usage in enumerate(state["tool_usage"], 1):
-                tool_usage_text += f"{i}. {usage['tool']} 도구 사용\n"
-                tool_usage_text += f"   입력: {usage['input']}\n"
-                if len(str(usage["output"])) > 100:
-                    tool_usage_text += f"   출력: {str(usage['output'])[:100]}...\n"
-                else:
-                    tool_usage_text += f"   출력: {usage['output']}\n"
-            print(f"도구 사용 내역: {tool_usage_text}")
-
-        # 최종 응답 결정
-        output = result.get("output", "")
-        if isinstance(output, str):
-            if "Action: FinalAnswer" in output:
-                # 최종 답변이면 Action Input 추출
-                match = re.search(r"Action Input:\s*(.+)", output, re.DOTALL)
-                if match:
-                    final_answer = match.group(1).strip()
-                    state["messages"].append(
-                        {"role": "assistant", "content": final_answer}
-                    )
-                    return {**state, "response": final_answer}
-            else:
-                # 일반 텍스트 응답
-                state["messages"].append({"role": "assistant", "content": output})
-                return {**state, "response": output}
+        if isinstance(result, dict):
+            response_text = result.get("output", "")
         else:
-            state["messages"].append({"role": "assistant", "content": str(output)})
-            return {**state, "response": str(output)}
+            response_text = str(result)
+
+        response_text = sharing_service.get_share_request(
+            state.get("user_input", ""),
+            response_text,
+            state.get("context", {}),
+            state.get("config_data", {}).get("base_url", "localhost:8000"),
+        )
+
+        state["streaming"] = {
+            "message": response_text,
+            "current_position": 0,
+            "is_complete": False,
+        }
+
+        intermediate_steps = result.get("intermediate_steps", [])
+
+        memory.save_context(
+            inputs={
+                memory.input_key: full_prompt,
+                "agent_scratchpad": intermediate_steps,
+            },
+            outputs={memory.output_key: response_text},
+        )
+
+        current_message = response_text[: state["streaming"]["current_position"]]
+        state["messages"].append({"role": "assistant", "content": current_message})
+        state["next_node"] = "update_itinerary_stream"
+        return ItineraryState(**state)
 
     except Exception as e:
         logger.error(f"General error: {str(e)}")
         logger.exception("Full stack trace:")
         error_response = f"[여행 일정 생성 오류] {str(e)}"
-        if "messages" not in state:
-            state["messages"] = []
         state["messages"].append({"role": "assistant", "content": error_response})
-        return {**state, "response": error_response}
+        raise e
 
 
-def get_itinerary_node_agent(
-    llm_client: BaseLLMClient, state: ItineraryState
+def update_itinerary_stream(state: ItineraryState) -> ItineraryState:
+    try:
+        streaming = state["streaming"]
+        if streaming["is_complete"]:
+            return state
+
+        chunk_size = 50
+        current_pos = streaming["current_position"]
+        next_pos = min(current_pos + chunk_size, len(streaming["message"]))
+        streaming["current_position"] = next_pos
+        streaming["is_complete"] = next_pos >= len(streaming["message"])
+        current_message = streaming["message"][:next_pos]
+        state["messages"][-1]["content"] = current_message
+        state["next_node"] = "update_itinerary_stream"
+        time.sleep(1)
+        return state
+
+    except Exception as e:
+        return state
+
+
+def create_itinerary_node_agent(
+    llm_client: BaseLLMClient,
+    state: ItineraryState,
+    tools: List[StructuredTool],
+    tool_descriptions: str,
+    tool_names: List[str],
 ) -> Dict[str, Any]:
-    kakao_place_search_service = KakaoPlaceSearchService(
-        KakaoPlaceClient(
-            os.getenv("KAKAO_REST_KEY", "7582a0567cfa228ec8c38f2e3dafe03a")
-        )
-    )
-    place_search_tools = get_place_search_tools(kakao_place_search_service)
-
-    google_calendar_service = GoogleCalendarService(
-        GoogleCalendarClient(
-            os.getenv("GOOGLE_CALENDAR_ID"),
-            os.getenv("GOOGLE_CREDENTIALS_PATH"),
-        )
-    )
-    calendar_tools = get_calendar_tools(google_calendar_service)
-
-    tools = place_search_tools + calendar_tools
-    tool_descriptions = [
-        f"Tool: {tool.name}\nDescription: {tool.description}\n" for tool in tools
-    ]
-    formatted_tools = "\n".join(tool_descriptions)
-    tool_names = [tool.name for tool in tools]
-
+    session_id = state.get("config_data", {}).get("thread_id", "default")
     system_prompt = prompt_service.get_system_prompt(
         str(PROMPT_DIR / "itinerary/v1.yaml"),
     )
     system_prompt = system_prompt.partial(
-        tools=formatted_tools,
+        model=llm_client.get_llm().model,
+        tools=tool_descriptions,
         tool_names=", ".join(tool_names),
     )
+
     agent = create_structured_chat_agent(
         llm=llm_client.get_llm(), tools=tools, prompt=system_prompt
+    )
+    memory = session_manage_service.get_session_memory(
+        session_id, memory_key="chat_history", input_key="input", output_key="output"
     )
 
     agent_executor = AgentExecutor(
         agent=agent,
         tools=tools,
-        memory=ConversationBufferMemory(
-            memory_key="chat_history",
-            return_messages=True,
-            input_key="input",
-            output_key="output",
-        ),
+        memory=memory,
         verbose=True,
         handle_parsing_errors=True,
         max_iterations=15,
@@ -206,18 +187,6 @@ def _get_full_prompt(state: ItineraryState) -> str:
 
     if not messages:
         messages.append({"role": "system", "content": "여행 일정을 도와드릴게요."})
-    messages.append({"role": "user", "content": user_input})
-
-    if len(messages) > 1:
-        recent_messages = messages[:-1][-3:]
-        if recent_messages:
-            full_prompt += "이전 대화 요약:\n"
-            for msg in recent_messages:
-                role = "사용자" if msg["role"] == "user" else "AI"
-                content = msg["content"]
-                if len(content) > 200:
-                    content = content[:197] + "..."
-                full_prompt += f"{role}: {content}\n\n"
 
     if context:
         additional_info = ""

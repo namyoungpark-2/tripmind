@@ -5,6 +5,7 @@ from langchain.llms.base import BaseLLM
 from pydantic import BaseModel
 from tripmind.clients.llm.base_llm_client import BaseLLMClient
 from langchain.output_parsers import PydanticOutputParser
+from langchain.agents import OpenAIFunctionsAgent
 
 
 class ClaudeClient(BaseLLMClient):
@@ -20,6 +21,9 @@ class ClaudeClient(BaseLLMClient):
 
     def get_output_parser(self, pydantic_object: BaseModel) -> PydanticOutputParser:
         return PydanticOutputParser(pydantic_object=pydantic_object)
+
+    def get_output_temp(self) -> OpenAIFunctionsAgent:
+        return OpenAIFunctionsAgent()
 
 
 claude_client = ClaudeClient()

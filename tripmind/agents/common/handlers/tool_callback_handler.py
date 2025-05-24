@@ -2,8 +2,6 @@ from langchain.callbacks.base import BaseCallbackHandler
 import logging
 
 
-# 커스텀 콜백 핸들러 생성
-# 어떤 도구를 사용했는지 확인하기 위해 사용
 class ToolUsageCallbackHandler(BaseCallbackHandler):
     def __init__(self):
         self.tool_usage = []

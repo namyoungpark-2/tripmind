@@ -5,7 +5,7 @@ def build_search_query(parsed_info: Dict[str, Optional[str]]) -> str:
     """검색 쿼리 구성"""
     query_parts = []
 
-    for key in ["category", "subcategory", "mood", "price_range"]:
+    for key in ["location", "category", "subcategory", "mood", "price_range"]:
         if value := parsed_info.get(key):
             query_parts.append(value)
 

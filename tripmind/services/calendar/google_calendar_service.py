@@ -35,7 +35,6 @@ class GoogleCalendarService(BaseCalendarService):
             "start": {"dateTime": start_datetime, "timeZone": "Asia/Seoul"},
             "end": {"dateTime": end_datetime, "timeZone": "Asia/Seoul"},
         }
-        print(f"google service event_data: {event_data}")
         # 클라이언트 호출 및 결과 반환
         result = self.client.create_event(event_data)
 

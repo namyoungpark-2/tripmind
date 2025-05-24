@@ -26,7 +26,6 @@ class GoogleCalendarClient(BaseCalendarClient):
             .insert(calendarId=self.calendar_id, body=event_data)
             .execute()
         )
-        print(f"create_event result: {result}")
         return result
 
     def get_events(self, time_min: str, time_max: str) -> List[Dict[str, Any]]:

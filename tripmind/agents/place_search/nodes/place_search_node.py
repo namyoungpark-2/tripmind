@@ -1,10 +1,12 @@
-from typing import Dict, Any
 import os
 import logging
+import time
+
 from tripmind.agents.place_search.utils.query_builder import build_search_query
 from tripmind.services.place_search.kakao_place_search_service import (
     KakaoPlaceSearchService,
 )
+from tripmind.services.session.session_manage_service import session_manage_service
 from tripmind.clients.place_search.kakao_place_client import KakaoPlaceClient
 from ..types.place_search_state_type import (
     PlaceSearchState,
@@ -15,65 +17,96 @@ from ..utils.formatting import format_places_results
 
 logger = logging.getLogger(__name__)
 
-kakao_place_search_service = KakaoPlaceSearchService(
-    KakaoPlaceClient(os.getenv("KAKAO_REST_KEY"))
-)
 
-
-def place_search_node(state: Dict[str, Any]) -> Dict[str, Any]:
-    """장소 검색 노드"""
+def place_search_node(state: PlaceSearchState) -> PlaceSearchState:
     try:
-        # 상태 객체 생성
-        search_state = PlaceSearchState(
-            messages=state.get("messages", []),
-            parsed_info=state.get("parsed_info", {}),
-            context=PlaceSearchContext(),
-            next_node="conversation",
+        user_input = state.get("user_input", "")
+        query = build_search_query(state.get("parsed_info", {}))
+        parsed_info = state.get("parsed_info", {})
+        session_id = state.get("config_data", {}).get("thread_id", "default")
+        messages = state.get("messages", [])
+
+        location, count = (
+            parsed_info.get("location"),
+            parsed_info.get("count"),
         )
 
-        # 검색 쿼리 구성
-        query = build_search_query(search_state.get("parsed_info", {}))
-        location = search_state.get("parsed_info", {}).get("location")
-        count = search_state.get("parsed_info", {}).get("count")
-        # 장소 검색 실행
-        print(f"count: {count}")
+        kakao_place_search_service = KakaoPlaceSearchService(
+            KakaoPlaceClient(os.getenv("KAKAO_REST_KEY"))
+        )
         search_results = kakao_place_search_service.search_places(
-            query=query, location=location, size=int(count)
+            query=query, location=location, size=int(count or 5)
         )
-
-        # 응답 메시지 생성
         if search_results:
             response_text = f"'{query}' 검색 결과입니다:\n\n"
             response_text += format_places_results(search_results)
-
-            if location:
-                response_text += (
-                    f"\n\n참고: 지역 '{location}'에 대한 필터링이 적용되었습니다."
-                )
-
             response_text += (
                 "\n\n더 자세한 정보나 다른 장소를 알고 싶으시면 말씀해주세요."
             )
         else:
             response_text = f"죄송합니다. '{query}'에 대한 검색 결과가 없습니다. 다른 조건으로 시도해보시겠어요?"
 
-        # 상태 업데이트
-        search_state["messages"].append({"role": "assistant", "content": response_text})
-        search_state["context"]["last_search"] = LastSearch(
-            query=query, location=location, results=search_results
+        place_search_context = PlaceSearchContext(
+            last_search=LastSearch(
+                query=query,
+                location=location,
+                results=[result.model_dump() for result in search_results],
+            )
         )
 
-        return dict(search_state)
+        current_message = response_text[:0]
+        message = messages + [{"role": "assistant", "content": current_message}]
+
+        memory = session_manage_service.get_session_memory(
+            session_id,
+            memory_key="chat_history",
+            input_key="input",
+            output_key="output",
+        )
+        memory.save_context(
+            inputs={memory.input_key: user_input},
+            outputs={memory.output_key: response_text},
+        )
+
+        return PlaceSearchState(
+            messages=message,
+            parsed_info=parsed_info,
+            context=place_search_context,
+            next_node="update_place_search_stream",
+            streaming={
+                "message": response_text,
+                "current_position": 0,
+                "is_complete": False,
+            },
+        )
 
     except Exception as e:
         logger.error(f"장소 검색 오류: {str(e)}")
-        error_message = f"장소 검색 중 오류가 발생했습니다: {str(e)}"
+        raise RuntimeError(f"[PlaceSearchNode] 오류 발생: {str(e)}")
 
-        search_state["messages"].append({"role": "assistant", "content": error_message})
-        return PlaceSearchState(
-            messages=state.get("messages", [])
-            + [{"role": "assistant", "content": error_message}],
-            parsed_info=state.get("parsed_info", {}),
-            context=PlaceSearchContext(last_search=None),
-            next_node="conversation",
-        )
+
+def update_place_search_stream(state: PlaceSearchState) -> PlaceSearchState:
+    try:
+        streaming = state.get("streaming", {})
+        messages = state.get("messages", [])
+
+        if streaming["is_complete"]:
+            return state
+
+        chunk_size = 20
+        current_pos = streaming["current_position"]
+        next_pos = min(current_pos + chunk_size, len(streaming["message"]))
+
+        streaming["current_position"] = next_pos
+
+        streaming["is_complete"] = next_pos >= len(streaming["message"])
+        current_message = streaming["message"][:next_pos]
+
+        messages[-1]["content"] = current_message
+
+        state["messages"] = messages
+        state["next_node"] = "update_place_search_stream"
+        time.sleep(1)  # 1초 대기
+        return PlaceSearchState(**state)
+    except Exception as e:
+        return state

@@ -1,11 +1,15 @@
-from rest_framework.views import APIView
+import json
+from django.http import StreamingHttpResponse
+from django.views import View
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.models import User
 from django.utils import timezone
-from tripmind.agents.common.types.agent_executor_type import AgentExecutorResult
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+from tripmind.agents.sharing.sharing_agent_executor import SharingRouterAgentExecutor
 from tripmind.agents.place_search.place_search_agent_executor import (
     PlaceSearchAgentExecutor,
 )
@@ -30,7 +34,9 @@ from tripmind.agents.prompt_router.prompt_router_agent_executor import (
 from tripmind.agents.prompt_router.constants.intent_constants import Intent
 
 
-class ItineraryAPIView(APIView):
+# 프로덕션 환경에서는 비활성화 해야함
+@method_decorator(csrf_exempt, name="dispatch")
+class ItineraryAPIView(View):
     """
     여행 일정 전문 에이전트 API
     """
@@ -39,60 +45,82 @@ class ItineraryAPIView(APIView):
         """
         메시지 처리 API
         """
-        serializer = MessageSerializer(data=request.data)
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            data = json.loads(request.body)
+            serializer = MessageSerializer(data=data)
+            if not serializer.is_valid():
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        # 세션 ID (인증된 사용자의 경우 사용자 ID 활용 가능)
-        session_id = request.session.session_key or request.headers.get(
-            "X-Session-ID", "default"
-        )
+            session_id = request.session.session_key or request.headers.get(
+                "X-Session-ID", "default"
+            )
 
-        # 세션 가져오기 또는 생성
-        prompt = serializer.validated_data["message"]
-        prompt_router_agent_executor = PromptRouterAgentExecutor()
+            prompt = serializer.validated_data["message"]
+            agent_executor = self._get_agent_executor(Intent.CLASSIFY_INTENT.value)
 
-        router_result: AgentExecutorResult = (
-            prompt_router_agent_executor.process_prompt(
+            router_result = agent_executor.process_prompt(
                 prompt=prompt,
                 session_id=session_id,
             )
-        )
-        print("router_result", router_result)
-        intent = router_result["intent"]
-        next_node = router_result["next_node"]
 
-        print(f"메시지: '{prompt}' -> 분류된 의도: {intent}")
+            intent = router_result["intent"]
+            next_node = router_result["next_node"]
 
-        if intent == Intent.ITINERARY.value:
-            print("여행 일정 전문 에이전트 실행")
-            agent_executor = ItineraryAgentExecutor()
+            print(f"메시지: '{prompt}' -> 분류된 의도: {intent}")
+
+            agent_executor = self._get_agent_executor(intent)
+
+            itinerary_service = ItineraryService(agent_executor)
+
+            return StreamingHttpResponse(
+                self._event_stream(
+                    itinerary_service, session_id, serializer, next_node
+                ),
+                content_type="text/event-stream",
+            )
+        except json.JSONDecodeError:
+            return Response(
+                {"error": "잘못된 JSON 형식입니다."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    def _get_agent_executor(self, intent):
+        if intent == Intent.CLASSIFY_INTENT.value:
+            return PromptRouterAgentExecutor()
+        elif intent == Intent.ITINERARY.value:
+            return ItineraryAgentExecutor()
         elif intent == Intent.PLACE_SEARCH.value:
-            print("장소 검색에이전트 실행")
-            agent_executor = PlaceSearchAgentExecutor()
+            return PlaceSearchAgentExecutor()
+        elif intent == Intent.SHARING.value:
+            return SharingRouterAgentExecutor()
         else:
-            print("일반 대화 에이전트 실행")
-            agent_executor = ConversationAgentExecutor()
+            return ConversationAgentExecutor()
 
-        itinerary_service = ItineraryService(agent_executor)
+    def _event_stream(self, itinerary_service, session_id, serializer, next_node):
+        try:
+            for result in itinerary_service.process_message(
+                session_id=session_id,
+                message=serializer.validated_data["message"],
+                start_node=next_node,
+            ):
+                if result:
+                    yield f"data: {json.dumps(result)}\n\n"
+        except Exception as e:
+            error_response = {
+                "error": str(e),
+                "response": f"[대화 오류] {str(e)}",
+                "messages": [],
+                "context": {},
+            }
+            yield f"data: {json.dumps(error_response)}\n\n"
 
-        # 멀티 에이전트 처리
-        result = itinerary_service.process_message(
-            session_id=session_id,
-            message=serializer.validated_data["message"],
-            start_node=next_node,
-        )
 
-        # conversation_history_service.save_conversation(
-        #     session_id,
-        #     serializer.validated_data["message"],
-        #     result.get("response", "응답을 생성하지 못했습니다."),
-        # )
-
-        return Response(result, status=status.HTTP_200_OK)
-
-
-class ItineraryDetailAPIView(APIView):
+class ItineraryDetailAPIView(View):
     """여행 일정 상세 조회/수정/삭제 API"""
 
     permission_classes = [IsAuthenticated]
@@ -121,7 +149,7 @@ class ItineraryDetailAPIView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class ItineraryShareAPIView(APIView):
+class ItineraryShareAPIView(View):
     """여행 일정 공유 API"""
 
     permission_classes = [IsAuthenticated]
@@ -167,7 +195,7 @@ class ItineraryShareAPIView(APIView):
         return Response(serializer.data)
 
 
-class ItineraryShareRemoveAPIView(APIView):
+class ItineraryShareRemoveAPIView(View):
     """여행 일정 공유 해제 API"""
 
     permission_classes = [IsAuthenticated]
@@ -182,7 +210,7 @@ class ItineraryShareRemoveAPIView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class ItineraryPublicShareAPIView(APIView):
+class ItineraryPublicShareAPIView(View):
     """여행 일정 공개 공유 설정 API"""
 
     permission_classes = [IsAuthenticated]
@@ -229,7 +257,7 @@ class ItineraryPublicShareAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class PublicItineraryViewAPIView(APIView):
+class PublicItineraryViewAPIView(View):
     """공개된 여행 일정 조회 API - 로그인 불필요"""
 
     def get(self, request, share_id, *args, **kwargs):

@@ -32,7 +32,6 @@ class KakaoPlaceClient(BasePlaceSearchClient):
         params = {"query": keyword, "page": page, "size": size}
 
         try:
-            print(f"kakao request: {url}, {self.headers}, {params}")
             response = requests.get(url, headers=self.headers, params=params)
             response.raise_for_status()
             return response.json()

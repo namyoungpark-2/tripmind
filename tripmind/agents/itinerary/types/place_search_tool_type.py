@@ -8,4 +8,6 @@ class SearchPlacesInput(BaseModel):
 
 
 class GetPlaceDetailsInput(BaseModel):
-    id: str = Field(..., description="장소의 고유 ID")
+    place_name: str
+    x: str
+    y: str

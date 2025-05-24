@@ -3,10 +3,10 @@ from langgraph.checkpoint.memory import MemorySaver
 
 from tripmind.agents.itinerary.nodes.ask_info_node import ask_info_node
 from .types.itinerary_state_type import ItineraryState
-from .nodes.itinerary_node import itinerary_node
-from .nodes.sharing_node import sharing_node
+from .nodes.itinerary_node import itinerary_node, update_itinerary_stream
 from tripmind.agents.common.nodes.node_wrapper import node_wrapper
 from tripmind.clients.llm.claude_client import claude_client
+from ..common.utils.validation_checker import should_continue_streaming
 
 
 def wrap_all_nodes():
@@ -14,54 +14,56 @@ def wrap_all_nodes():
         lambda state: itinerary_node(claude_client, state)
     )
     wrapped_ask_info_node = node_wrapper(ask_info_node)
-    wrapped_sharing_node = node_wrapper(sharing_node)
+    wrapped_update_itinerary_stream = node_wrapper(update_itinerary_stream)
 
     return {
         "itinerary_node": wrapped_itinerary_node,
+        "update_itinerary_stream_node": wrapped_update_itinerary_stream,
         "ask_info_node": wrapped_ask_info_node,
-        "sharing_node": wrapped_sharing_node,
     }
 
 
-# 그래프 생성
 def create_itinerary_agent_graph():
-    # 체크포인트 저장소
     memory = MemorySaver()
 
-    # 그래프 초기화
     graph = StateGraph(ItineraryState)
 
-    # 래핑된 노드 가져오기
     wrapped_nodes = wrap_all_nodes()
 
-    # 노드 추가
-    graph.add_node("itinerary", wrapped_nodes["itinerary_node"])
-    graph.add_node("ask_info", wrapped_nodes["ask_info_node"])
-    graph.add_node("sharing", wrapped_nodes["sharing_node"])
+    graph.add_node("itinerary_node", wrapped_nodes["itinerary_node"])
+    graph.add_node(
+        "update_itinerary_stream_node", wrapped_nodes["update_itinerary_stream_node"]
+    )
+    graph.add_node("ask_info_node", wrapped_nodes["ask_info_node"])
 
-    # 시작 노드 설정
-    graph.set_entry_point("itinerary")
+    graph.set_entry_point("ask_info_node")
 
-    # 라우터 노드 조건부 전환: next_node 필드를 기반으로 각 노드로 라우팅
     graph.add_conditional_edges(
-        "itinerary",
-        lambda state: state["next_node"],  # next_node 필드 사용
+        "ask_info_node",
+        lambda state: (
+            END if state["next_node"] == "ask_info_node" else "itinerary_node"
+        ),
+    )
+
+    graph.add_conditional_edges(
+        "itinerary_node",
+        should_continue_streaming,
         {
-            "ask_info": "ask_info",
-            "sharing": "sharing",
-            "itinerary": END,
-            "end": END,
+            True: "update_itinerary_stream_node",
+            False: END,
         },
     )
 
-    # 응답 노드에서 종료
-    graph.add_edge("itinerary", END)
-    graph.add_edge("ask_info", END)
-    graph.add_edge("sharing", END)
+    graph.add_conditional_edges(
+        "update_itinerary_stream_node",
+        should_continue_streaming,
+        {
+            True: "update_itinerary_stream_node",
+            False: END,
+        },
+    )
 
-    # 컴파일
     return graph.compile(checkpointer=memory)
 
 
-# 그래프 인스턴스 생성
 itinerary_graph = create_itinerary_agent_graph()

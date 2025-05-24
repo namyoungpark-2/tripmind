@@ -34,13 +34,14 @@ def get_place_search_tools(
             logger.error(f"장소 검색 중 오류: {str(e)}")
             return f"장소 검색 중 오류가 발생했습니다: {str(e)}"
 
-    def get_place_details(id: str) -> str:
+    def get_place_details(place_name: str, x: str, y: str) -> str:
         try:
-            print(f"상세 정보 도구 호출됨: id={id}")
-            logger.debug(f"상세 정보 도구 호출됨: id={id}")
-            place = place_search_service.get_place_details(id)
+            logger.debug(
+                f"상세 정보 도구 호출됨: place_name={place_name}, x={x}, y={y}"
+            )
+            place = place_search_service.get_place_details(place_name, x, y)
             if not place:
-                return f"ID '{id}'에 대한 장소 정보를 찾을 수 없습니다."
+                return f"place_name '{place_name}'에 대한 장소 정보를 찾을 수 없습니다."
 
             result = f"'{place.name}' 상세 정보:\n\n"
             result += f"ID: {place.id}\n"
@@ -60,7 +61,7 @@ def get_place_search_tools(
             name="SearchPlaces",
             description=(
                 "키워드 및 좌표(lat,lng)를 기반으로 장소를 검색합니다.\n"
-                "입력 형식(JSON):\n"
+                "반드시 자연어를 제외한 입력 형식(JSON):\n"
                 "{\n"
                 '  "keyword": "검색할 키워드 (예: 경복궁)",\n'
                 '  "location": "37.5704,126.9768"  // 생략 가능\n'
@@ -70,7 +71,7 @@ def get_place_search_tools(
                 '  "keyword": "카페",\n'
                 '  "location": "37.5665,126.9780"\n'
                 "}\n"
-                "※ 반드시 위와 같은 JSON 형식으로 입력하며, 추가 설명 없이 JSON만 출력하세요."
+                "※ 중요 반드시 그 어떤 자연어 설명 포함 없이 반드시 위와 같은 JSON 형식으로 입력하며, JSON만 출력하세요."
             ),
             args_schema=SearchPlacesInput,
         ),
@@ -79,7 +80,7 @@ def get_place_search_tools(
             name="GetPlaceDetails",
             description=(
                 "장소 이름과 좌표를 기반으로 상세 정보를 조회합니다.\n"
-                "입력 형식(JSON):\n"
+                "반드시 자연어를 제외한 입력 형식(JSON):\n"
                 "{\n"
                 '  "place_name": "검색할 장소 이름 (예: 경복궁)",\n'
                 '  "x": "37.5704",\n'
@@ -91,7 +92,7 @@ def get_place_search_tools(
                 '  "x": "37.5704",\n'
                 '  "y": "126.9768"\n'
                 "}\n"
-                "※ 반드시 위와 같은 JSON 형식으로 입력하며, 추가 설명 없이 JSON만 출력하세요."
+                "※ 중요 반드시 그 어떤 자연어 설명 포함 없이 반드시 위와 같은 JSON 형식으로 입력하며, JSON만 출력하세요."
             ),
             args_schema=GetPlaceDetailsInput,
         ),

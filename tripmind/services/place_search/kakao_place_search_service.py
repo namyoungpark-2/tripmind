@@ -96,4 +96,4 @@ class KakaoPlaceSearchService(PlaceSearchService):
                 url=place.get("place_url"),
             )
 
-        return {}
+        return None

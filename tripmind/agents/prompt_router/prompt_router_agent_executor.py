@@ -1,13 +1,10 @@
-# tripmind/agents/excutors/prompt_router_agent_excutor.py
 from .prompt_router_agent_graph import prompt_router_graph
+from .types.prompt_router_state_type import PromptRouterState
 from ..common.types.agent_executor_type import AgentExecutorResult, BaseAgentExcutor
+from tripmind.services.session.session_manage_service import session_manage_service
 
 
 class PromptRouterAgentExecutor(BaseAgentExcutor):
-    """
-    사용자 입력의 목적(intent)을 분류하는 에이전트 실행기
-    """
-
     def process_prompt(
         self,
         prompt: str,
@@ -15,29 +12,23 @@ class PromptRouterAgentExecutor(BaseAgentExcutor):
         start_node: str = "input_node",
     ) -> AgentExecutorResult:
         try:
-            state = {"user_input": prompt, "messages": [], "next_node": start_node}
-            config = {"configurable": {"thread_id": session_id}}
-            try:
-                session_state = prompt_router_graph.get_state(config=config)
-                if session_state and session_state.values:
-                    messages = session_state.values.get("messages", [])
-                    messages.append({"role": "user", "content": prompt})
-                    state = {
-                        **session_state.values,
-                        "user_input": prompt,
-                        "messages": messages,
-                        "next_node": start_node,
-                    }
-            except:
-                pass
+            state, config = session_manage_service.get_session_state_and_config(
+                prompt_router_graph, prompt, start_node, session_id
+            )
 
-            result = prompt_router_graph.invoke(state, config=config)
+            prompt_router_state = PromptRouterState(**state)
+
+            result: PromptRouterState = prompt_router_graph.invoke(
+                prompt_router_state, config=config
+            )
+
             return AgentExecutorResult(
                 response=result.get("response", "응답을 생성하지 못했습니다."),
                 messages=result.get("messages", []),
                 context=result.get("context", {}),
                 intent=result.get("intent", "unknown"),
                 next_node=result.get("next_node", "unknown"),
+                streaming=result.get("streaming", {}),
             )
 
         except Exception as e:

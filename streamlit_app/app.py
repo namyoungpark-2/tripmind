@@ -9,7 +9,7 @@ import uuid
 load_dotenv()
 
 # Django REST API URL
-API_URL = "http://127.0.0.1:8000/api/tripmind/itinerary/"  # Django 서버 URL 조정 필요
+API_URL = "http://127.0.0.1:8000/api/tripmind/itinerary/"
 
 # 앱 제목 설정
 st.set_page_config(page_title="TripMind - 여행 에이전트", page_icon="✈️")
@@ -39,71 +39,73 @@ if prompt := st.chat_input("여행 계획에 대해 물어보세요..."):
     # API 요청 준비
     headers = {
         "Content-Type": "application/json",
-        "X-Session-ID": st.session_state.session_id,  # 세션 ID 포함
+        "X-Session-ID": st.session_state.session_id,
+        "Accept": "text/event-stream",
     }
 
     # 대화 히스토리를 포함한 요청 데이터 준비
     data = {
         "message": prompt,
-        "history": st.session_state.messages[:-1],  # 방금 추가한 메시지 제외한 히스토리
+        "history": st.session_state.messages[:-1],
     }
 
-    # API 호출
-    with st.spinner("응답 생성 중..."):
+    # API 호출 및 스트리밍 응답 처리
+    with st.chat_message("assistant"):
+        message_placeholder = st.empty()
+        full_response = ""
+
         try:
-            response = requests.post(API_URL, headers=headers, data=json.dumps(data))
+            with requests.post(
+                API_URL, headers=headers, data=json.dumps(data), stream=True
+            ) as response:
+                if response.status_code == 200:
+                    for line in response.iter_lines():
+                        if line:
+                            try:
+                                # SSE 형식에서 데이터 추출
+                                line = line.decode("utf-8")
+                                if line.startswith("data: "):
+                                    chunk = json.loads(line[6:])  # 'data: ' 제거
+                                    if "response" in chunk:
+                                        print(f"response:{chunk['response']}")
+                                        if (
+                                            chunk["response"]
+                                            != "응답을 생성하지 못했습니다."
+                                        ):
+                                            full_response = chunk["response"]
+                                            message_placeholder.write(full_response)
+                                            st.write(full_response)
+                                    if "streaming" in chunk:
+                                        print(f"streaming:{chunk['streaming']}")
+                                        streaming_data = chunk["streaming"]
+                                        if "message" in streaming_data:
+                                            current_message = streaming_data["message"][
+                                                : streaming_data["current_position"]
+                                            ]
+                                            message_placeholder.write(current_message)
+                                            if streaming_data["is_complete"]:
+                                                full_response = current_message
 
-            # 응답 처리
-            if response.status_code == 200:
-                response_data = response.json()
-
-                # 새로운 응답 구조 처리
-                assistant_content = ""
-
-                # 응답 형식 확인
-                if "response" in response_data:
-                    # 실패한 경우
-                    if response_data["response"] == "응답을 생성하지 못했습니다.":
-                        # messages 배열에서 마지막 assistant 메시지 찾기
-                        if "messages" in response_data and response_data["messages"]:
-                            for msg in response_data["messages"]:
-                                if msg.get("role") == "assistant":
-                                    assistant_content = msg.get("content", "")
-                    else:
-                        # 정상 응답
-                        assistant_content = response_data["response"]
-                elif "result" in response_data:
-                    # 원래 예상했던 형식
-                    assistant_content = response_data["result"]
-
-                # 응답 내용이 없으면 기본 메시지
-                if not assistant_content:
-                    assistant_content = (
-                        "죄송합니다. 응답을 생성하는 중 오류가 발생했습니다."
-                    )
-
-                # 응답 표시
-                with st.chat_message("assistant"):
-                    st.write(assistant_content)
-
-                # 응답 저장
-                st.session_state.messages.append(
-                    {"role": "assistant", "content": assistant_content}
-                )
-
-                # 컨텍스트 정보 표시 (있는 경우)
-                if "context" in response_data and response_data["context"]:
-                    context = response_data["context"]
-                    with st.sidebar:
-                        st.subheader("여행 정보")
-                        for key, value in context.items():
-                            if value:
-                                st.write(f"**{key}:** {value}")
-            else:
-                st.error(f"API 오류: {response.status_code} - {response.text}")
-                st.write("API 응답:", response.text)
+                                        # 컨텍스트 정보가 있는 경우 사이드바에 표시
+                                        if "context" in chunk and chunk["context"]:
+                                            context = chunk["context"]
+                                            with st.sidebar:
+                                                st.subheader("여행 정보")
+                                                for key, value in context.items():
+                                                    if value:
+                                                        st.write(f"**{key}:** {value}")
+                            except json.JSONDecodeError:
+                                continue
+                else:
+                    st.error(f"API 오류: {response.status_code} - {response.text}")
         except Exception as e:
             st.error(f"요청 오류: {str(e)}")
+
+        # 최종 응답 저장
+        if full_response:
+            st.session_state.messages.append(
+                {"role": "assistant", "content": full_response}
+            )
 
 # 사이드바 정보
 with st.sidebar:
@@ -140,6 +142,7 @@ if st.checkbox("디버그 정보 표시"):
             test_headers = {
                 "Content-Type": "application/json",
                 "X-Session-ID": st.session_state.session_id,
+                "Accept": "text/event-stream",
             }
             test_data = {
                 "message": "테스트 메시지",

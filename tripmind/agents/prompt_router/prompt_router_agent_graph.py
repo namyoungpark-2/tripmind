@@ -23,7 +23,6 @@ def wrap_all_nodes():
     }
 
 
-# 그래프 생성
 def create_prompt_router_agent_graph():
     memory = MemorySaver()
 
@@ -46,9 +45,7 @@ def create_prompt_router_agent_graph():
     )
     graph.add_edge("classify_intent_node", END)
 
-    # 컴파일
     return graph.compile(checkpointer=memory)
 
 
-# 그래프 인스턴스 생성
 prompt_router_graph = create_prompt_router_agent_graph()

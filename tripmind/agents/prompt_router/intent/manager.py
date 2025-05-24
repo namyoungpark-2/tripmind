@@ -2,7 +2,6 @@ import re
 from typing import Dict
 
 from tripmind.agents.prompt_router.constants.intent_constants import (
-    INTENT_TO_NODE_MAP,
     Intent,
 )
 from tripmind.agents.prompt_router.types.indent_type import IntentPatterns
@@ -75,29 +74,29 @@ class IntentPatternManager:
         text = text.lower()
 
         if self._patterns["end"].matches(text):
-            return INTENT_TO_NODE_MAP[Intent.END]
+            return Intent.END.value
 
         # 캘린더 의도 확인
         if self._patterns["calendar"].matches(text):
-            return INTENT_TO_NODE_MAP[Intent.ITINERARY]
+            return Intent.ITINERARY.value
 
         # 장소 검색 의도 확인
         if self._patterns["place_search"].matches(text):
-            return INTENT_TO_NODE_MAP[Intent.PLACE_SEARCH]
+            return Intent.PLACE_SEARCH.value
 
         # 일정 공유 의도 확인
         if self._patterns["sharing"].matches(text):
-            return INTENT_TO_NODE_MAP[Intent.ITINERARY]
+            return Intent.SHARING.value
 
         # 일정 생성 의도 확인
         if self._patterns["itinerary"].matches(text):
-            return INTENT_TO_NODE_MAP[Intent.ITINERARY]
+            return Intent.ITINERARY.value
 
         # 인사 의도 확인
         if self._patterns["greeting"].matches(text):
-            return INTENT_TO_NODE_MAP[Intent.GREETING]
+            return Intent.GREETING.value
 
-        return INTENT_TO_NODE_MAP[Intent.UNKNOWN]
+        return Intent.UNKNOWN.value
 
 
 intent_pattern_manager = IntentPatternManager()

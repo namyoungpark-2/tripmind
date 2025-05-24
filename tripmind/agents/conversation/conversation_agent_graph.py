@@ -1,67 +1,93 @@
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
 from .nodes.router_node import router_node
-from .nodes.greeting_node import greeting_node
-from .nodes.conversation_node import conversation_node
+from .nodes.greeting_node import greeting_node, update_greeting_stream
+from .nodes.conversation_node import conversation_node, update_conversation_stream
 from .types.conversation_state_type import ConversationState
 from ..common.nodes.node_wrapper import node_wrapper
 from tripmind.clients.llm.claude_client import claude_client
-
-# 이후 일상 대화에 필요한 여러 도구들 추가 (ex: 장소 검색, 날씨 정보, 뉴스 등)
+from ..common.utils.validation_checker import should_continue_streaming
 
 
 def wrap_all_nodes():
-    """모든 노드에 검증 래퍼 적용"""
     wrapped_router_node = node_wrapper(router_node)
     wrapped_greeting_node = node_wrapper(greeting_node)
     wrapped_conversation_node = node_wrapper(conversation_node)
-
+    wrapped_update_greeting_stream = node_wrapper(update_greeting_stream)
+    wrapped_update_conversation_stream = node_wrapper(update_conversation_stream)
     return {
         "router_node": wrapped_router_node,
         "greeting_node": wrapped_greeting_node,
         "conversation_node": wrapped_conversation_node,
+        "update_greeting_stream_node": wrapped_update_greeting_stream,
+        "update_conversation_stream_node": wrapped_update_conversation_stream,
     }
 
 
-# 그래프 생성
 def create_conversation_agent_graph():
-    """여행 일정 에이전트 그래프 생성"""
-    # 체크포인트 저장소
     memory = MemorySaver()
-
-    # 그래프 초기화
     graph = StateGraph(ConversationState)
-
-    # 래핑된 노드 가져오기
     wrapped_nodes = wrap_all_nodes()
 
-    # 노드 추가
-    graph.add_node("router", wrapped_nodes["router_node"])
-    graph.add_node("greeting", wrapped_nodes["greeting_node"])
+    graph.add_node("router_node", wrapped_nodes["router_node"])
+    graph.add_node("greeting_node", wrapped_nodes["greeting_node"])
     graph.add_node(
-        "conversation",
+        "conversation_node",
         lambda state: wrapped_nodes["conversation_node"](claude_client, state),
     )
-
-    # 시작 노드 설정
-    graph.set_entry_point("router")
-
-    graph.add_conditional_edges(
-        "router",  # 라우터 노드
-        lambda state: state["next_node"],
-        {
-            "greeting": "greeting",
-            "conversation": "conversation",
-        },
+    graph.add_node(
+        "update_greeting_stream_node", wrapped_nodes["update_greeting_stream_node"]
+    )
+    graph.add_node(
+        "update_conversation_stream_node",
+        wrapped_nodes["update_conversation_stream_node"],
     )
 
-    # 응답 노드에서 종료
-    graph.add_edge("greeting", END)
-    graph.add_edge("conversation", END)
+    graph.set_entry_point("router_node")
 
-    # 컴파일
+    graph.add_conditional_edges(
+        "router_node",
+        lambda state: state["next_node"],
+        {
+            "greeting_node": "greeting_node",
+            "conversation_node": "conversation_node",
+        },
+    )
+    graph.add_conditional_edges(
+        "greeting_node",
+        should_continue_streaming,
+        {
+            True: "update_greeting_stream_node",
+            False: END,
+        },
+    )
+    graph.add_conditional_edges(
+        "update_greeting_stream_node",
+        should_continue_streaming,
+        {
+            True: "update_greeting_stream_node",
+            False: END,
+        },
+    )
+    graph.add_conditional_edges(
+        "conversation_node",
+        should_continue_streaming,
+        {
+            True: "update_conversation_stream_node",
+            False: END,
+        },
+    )
+    graph.add_conditional_edges(
+        "update_conversation_stream_node",
+        should_continue_streaming,
+        {
+            True: "update_conversation_stream_node",
+            False: END,
+        },
+    )
+    graph.add_edge("conversation_node", END)
+
     return graph.compile(checkpointer=memory)
 
 
-# 그래프 인스턴스 생성
 conversation_graph = create_conversation_agent_graph()

@@ -16,19 +16,19 @@ from tripmind.services.prompt.prompt_service import prompt_service
 from langchain.chains import LLMChain
 
 logger = logging.getLogger(__name__)
-
 PROMPT_DIR = Path(__file__).parent / "../prompt_templates"
 
 
 def classify_intent_node(
     llm_client: BaseLLMClient, state: PromptRouterState
 ) -> PromptRouterState:
-    try:
-        session_id = state.get("config_data", {}).get("session_id", "default")
-        config = {"configurable": {"session_id": session_id}}
-        user_input = state.get("user_input", "")
-        next_node = state.get("next_node", "")
+    session_id = state.get("config_data", {}).get("session_id", "default")
+    user_input = state.get("user_input", "")
+    next_node = state.get("next_node", "")
+    messages = state.get("messages", [])
 
+    try:
+        config = {"configurable": {"session_id": session_id}}
         intent_descriptions = "\n".join(
             [
                 f"- {intent.value}: {description}"
@@ -60,46 +60,50 @@ def classify_intent_node(
             config=config,
         )
 
-        try:
-            if isinstance(response, dict):
-                if "output" in response:
-                    intent_str = json.loads(response["output"])["intent"]
-                else:
-                    intent_str = response["intent"]
-            else:
-                intent_str = json.loads(str(response))["intent"]
-        except Exception as e:
-            logger.error(f"의도 파싱 중 오류: {str(e)}")
-            intent_str = "conversation"
-
-        if intent_str in [e.value for e in Intent]:
-            if intent_str in [Intent.CALENDAR, Intent.SHARING, Intent.ITINERARY]:
-                intent = Intent.ITINERARY
-            else:
-                intent = Intent(intent_str)
-        else:
-            intent = Intent.CONVERSATION
+        intent = get_intent(response)
 
         next_node = INTENT_TO_NODE_MAP.get(intent, "conversation")
 
-        state: PromptRouterState = {
-            "user_input": user_input,
-            "intent": intent.value,
-            "next_node": next_node,
-            "messages": state.get("messages", []),
-            "context": {"intent": intent.value},
-            "response": response,
-        }
-
-        return state
+        return PromptRouterState(
+            user_input=user_input,
+            intent=intent.value,
+            next_node=next_node,
+            messages=messages,
+            context={"intent": intent.value},
+            response=response,
+        )
 
     except Exception as e:
         traceback.print_exc()
-        return {
-            "user_input": user_input,
-            "intent": Intent.CONVERSATION.value,
-            "next_node": "conversation",
-            "messages": state.get("messages", []),
-            "context": {"intent": Intent.CONVERSATION.value},
-            "response": f"의도 분류 중 오류가 발생했습니다: {str(e)}",
-        }
+        return PromptRouterState(
+            user_input=user_input,
+            intent=Intent.CONVERSATION.value,
+            next_node="conversation",
+            messages=messages,
+            context={"intent": Intent.CONVERSATION.value},
+            response=f"의도 분류 중 오류가 발생했습니다: {str(e)}",
+        )
+
+
+def get_intent(response: str) -> Intent:
+    try:
+        if isinstance(response, dict):
+            if "output" in response:
+                intent_str = json.loads(response["output"])["intent"]
+            else:
+                intent_str = response["intent"]
+        else:
+            intent_str = json.loads(str(response))["intent"]
+    except Exception as e:
+        logger.error(f"의도 파싱 중 오류: {str(e)}")
+        intent_str = "conversation"
+
+    if intent_str in [e.value for e in Intent]:
+        if intent_str in [Intent.CALENDAR, Intent.SHARING, Intent.ITINERARY]:
+            intent = Intent.ITINERARY
+        else:
+            intent = Intent(intent_str)
+    else:
+        intent = Intent.CONVERSATION
+
+    return intent
