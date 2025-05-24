@@ -1,27 +1,24 @@
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
+
+from tripmind.agents.itinerary.nodes.ask_info_node import ask_info_node
 from .types.itinerary_state_type import ItineraryState
 from .nodes.itinerary_node import itinerary_node
-from .nodes.ask_info_node import ask_info_node
-from .nodes.place_search_node import place_search_node
-from .nodes.calendar_node import calendar_node
 from .nodes.sharing_node import sharing_node
-from tripmind.agents.common.node.node_wrapper import node_wrapper
-from .itinerary_agent_llm import itinerary_agent_llm
+from tripmind.agents.common.nodes.node_wrapper import node_wrapper
+from tripmind.clients.llm.claude_client import claude_client
 
 
 def wrap_all_nodes():
-    wrapped_itinerary_node = node_wrapper(itinerary_node)
+    wrapped_itinerary_node = node_wrapper(
+        lambda state: itinerary_node(claude_client, state)
+    )
     wrapped_ask_info_node = node_wrapper(ask_info_node)
-    wrapped_place_search_node = node_wrapper(place_search_node)
-    wrapped_calendar_node = node_wrapper(calendar_node)
     wrapped_sharing_node = node_wrapper(sharing_node)
 
     return {
         "itinerary_node": wrapped_itinerary_node,
         "ask_info_node": wrapped_ask_info_node,
-        "place_search_node": wrapped_place_search_node,
-        "calendar_node": wrapped_calendar_node,
         "sharing_node": wrapped_sharing_node,
     }
 
@@ -38,31 +35,9 @@ def create_itinerary_agent_graph():
     wrapped_nodes = wrap_all_nodes()
 
     # 노드 추가
-    graph.add_node(
-        "itinerary",
-        lambda state: wrapped_nodes["itinerary_node"](
-            itinerary_agent_llm.get_llm(), state
-        ),
-    )
+    graph.add_node("itinerary", wrapped_nodes["itinerary_node"])
     graph.add_node("ask_info", wrapped_nodes["ask_info_node"])
-    graph.add_node(
-        "sharing",
-        lambda state: wrapped_nodes["sharing_node"](
-            itinerary_agent_llm.get_llm(), state
-        ),
-    )
-    graph.add_node(
-        "place_search",
-        lambda state: wrapped_nodes["place_search_node"](
-            itinerary_agent_llm.get_llm(), state
-        ),
-    )
-    graph.add_node(
-        "calendar",
-        lambda state: wrapped_nodes["calendar_node"](
-            itinerary_agent_llm.get_llm(), state
-        ),
-    )
+    graph.add_node("sharing", wrapped_nodes["sharing_node"])
 
     # 시작 노드 설정
     graph.set_entry_point("itinerary")
@@ -73,8 +48,6 @@ def create_itinerary_agent_graph():
         lambda state: state["next_node"],  # next_node 필드 사용
         {
             "ask_info": "ask_info",
-            "place_search": "place_search",
-            "calendar": "calendar",
             "sharing": "sharing",
             "itinerary": END,
             "end": END,
@@ -84,8 +57,6 @@ def create_itinerary_agent_graph():
     # 응답 노드에서 종료
     graph.add_edge("itinerary", END)
     graph.add_edge("ask_info", END)
-    graph.add_edge("place_search", END)
-    graph.add_edge("calendar", END)
     graph.add_edge("sharing", END)
 
     # 컴파일

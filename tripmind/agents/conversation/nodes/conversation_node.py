@@ -1,76 +1,65 @@
-from langchain_anthropic import ChatAnthropic
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.runnables import RunnableMap
-from langchain_core.output_parsers import StrOutputParser
 from typing import Dict, Any
 import logging
-
-from tripmind.services.session.session_manage_service import session_manage_service
+from pathlib import Path
+from tripmind.clients.llm.base_llm_client import BaseLLMClient
+from tripmind.services.prompt.prompt_service import prompt_service
+from langchain.chains import LLMChain
 
 logger = logging.getLogger(__name__)
 
+PROMPT_DIR = Path(__file__).parent / "../prompt_templates"
 
-def conversation_node(llm: ChatAnthropic, state: Dict[str, Any]) -> Dict[str, Any]:
-    """검색 노드"""
+
+def conversation_node(
+    llm_client: BaseLLMClient, state: Dict[str, Any]
+) -> Dict[str, Any]:
     try:
-        # 세션 ID 가져오기 (스레드 ID를 세션 ID로 사용)
-        config = state.get("config_data", {})
-        session_id = config.get("thread_id", "default")
+        session_id = state.get("config_data", {}).get("thread_id", "default")
+        config = {"configurable": {"session_id": session_id}}
 
         user_input = state["user_input"]
-        base_prompt = ChatPromptTemplate.from_messages(
-            [
-                ("system", "당신은 여행 일정 전문 AI 에이전트입니다."),
-                MessagesPlaceholder(variable_name="chat_history"),
-                ("human", "{input}"),
-                MessagesPlaceholder(variable_name="agent_scratchpad"),
-            ]
+        prompt = prompt_service.get_system_prompt(
+            str(PROMPT_DIR / "conversation/v1.yaml"),
         )
 
-        memory = session_manage_service.get_session_memory(session_id)
-        chat_history = memory.load_memory_variables({}).get("chat_history", [])
-
-        lang_chain = (
-            RunnableMap(
-                {
-                    "input": lambda x: x["input"],
-                    "chat_history": lambda x: x.get("chat_history", []),
-                    "agent_scratchpad": lambda x: x.get("agent_scratchpad", []),
-                    "model": lambda x: x.get("model", llm.model),
-                }
-            )
-            | base_prompt
-            | llm
-            | StrOutputParser()
+        prompt = prompt.partial(
+            model=llm_client.get_llm().model,
         )
 
-        # LLM 호출
-        response = lang_chain.invoke(
+        chain = LLMChain(
+            llm=llm_client.get_llm(),
+            prompt=prompt,
+            verbose=True,
+            output_key="output",
+        )
+
+        response = chain.invoke(
             {
                 "input": user_input,
-                "chat_history": chat_history,
+                "chat_history": state.get("messages", []),
                 "agent_scratchpad": [],
-                "model": llm.model,
-            }
+                "model": llm_client.get_llm().model,
+            },
+            config=config,
         )
 
-        memory.save_context({"input": user_input}, {"output": response})
+        print("response", response)
+        try:
+            if isinstance(response, dict):
+                response_text = response["output"]
+            else:
+                response_text = str(response)
+        except Exception as e:
+            logger.error(f"의도 파싱 중 오류: {str(e)}")
 
-        # 메시지 추가
-        if "messages" not in state:
-            state["messages"] = []
-
-        state["messages"].append({"role": "assistant", "content": response})
-
-        # 응답과 함께 전체 상태 반환
-        return {**state, "response": response}
+        state["messages"].append({"role": "assistant", "content": response_text})
+        return {**state, "response": response_text}
 
     except Exception as e:
         logger.error(f"General error: {str(e)}")
         logger.exception("Full stack trace:")
         error_message = f"[대화 생성 오류] {str(e)}"
 
-        # 오류 메시지를 포함한 상태 반환
         if "messages" not in state:
             state["messages"] = []
         state["messages"].append({"role": "assistant", "content": error_message})

@@ -3,7 +3,7 @@ import logging
 import requests
 from typing import Dict, Any, Optional
 from urllib.parse import urljoin
-from langchain_anthropic import ChatAnthropic
+
 
 logger = logging.getLogger(__name__)
 
@@ -280,7 +280,7 @@ def handle_share_request(
     return response + share_message
 
 
-def sharing_node(llm: ChatAnthropic, state: Dict[str, Any]) -> Dict[str, Any]:
+def sharing_node(state: Dict[str, Any]) -> Dict[str, Any]:
     """
     공유 노드 - 일정 공유 요청 처리
 

@@ -1,123 +1,105 @@
 import os
-from langchain_anthropic import ChatAnthropic
-from tripmind.agents.itinerary.tools.place_search_tool import PlaceSearchTool
-from tripmind.agents.common.handler.tool_callback_handler import (
-    ToolUsageCallbackHandler,
-)
+import re
+import time
+from tripmind.agents.itinerary.tools.calendar_tool import get_calendar_tools
+from tripmind.agents.itinerary.tools.place_search_tool import get_place_search_tools
+from tripmind.agents.itinerary.utils.extract_info import extract_travel_info
+from tripmind.clients.calendar.google_calendar_client import GoogleCalendarClient
+from tripmind.clients.llm.base_llm_client import BaseLLMClient
+from tripmind.services.calendar.google_calendar_service import GoogleCalendarService
 from tripmind.services.prompt.prompt_service import prompt_service
 from tripmind.agents.itinerary.types.itinerary_state_type import ItineraryState
 from tripmind.services.place_search.kakao_place_search_service import (
     KakaoPlaceSearchService,
 )
 from tripmind.clients.place_search.kakao_place_client import KakaoPlaceClient
-from tripmind.services.session.session_manage_service import session_manage_service
 from typing import Dict, Any
 from pathlib import Path
-
-from langchain.agents import AgentExecutor
-from langchain.agents.format_scratchpad import format_to_openai_function_messages
-from langchain.agents.output_parsers import OpenAIFunctionsAgentOutputParser
-
+from langchain.memory import ConversationBufferMemory
+from langchain.agents import AgentExecutor, create_structured_chat_agent
 import logging
+from anthropic import APIStatusError
 
 logger = logging.getLogger(__name__)
-PROMPT_DIR = Path(__file__).parent / "prompt_templates"
+PROMPT_DIR = Path(__file__).parent / "../prompt_templates"
+
+MAX_RETRIES = 3
+RETRY_DELAY = 2  # seconds
 
 
-def itinerary_node(llm: ChatAnthropic, state: ItineraryState) -> ItineraryState:
+def itinerary_node(llm_client: BaseLLMClient, state: ItineraryState) -> ItineraryState:
     """일정 생성 노드"""
     try:
-        # 입력 데이터 구성
         user_input = state.get("user_input", "")
         context = state.get("context", {})
-        messages = state.get("messages", [])
+        session_id = state.get("config_data", {}).get("thread_id", "default")
+        previous_results = state.get("previous_results", {})
+        state["previous_results"] = previous_results
+        travel_info = extract_travel_info(user_input)
+        for key, value in travel_info.items():
+            if value:
+                context[key] = value
 
-        # 세션 ID 가져오기 (스레드 ID를 세션 ID로 사용)
-        config = state.get("config_data", {})
-        session_id = config.get("thread_id", "default")
+        full_prompt = _get_full_prompt(state)
 
-        # 프롬프트 구성
-        full_prompt = ""
+        agent_executor = get_itinerary_node_agent(llm_client, state)
 
-        # 이전 대화 기록이 있으면 포함 (요약본만 포함)
-        if len(messages) > 1:  # 현재 사용자 메시지를 제외한 이전 대화가 있는 경우
-            # 최근 3개의 대화만 포함
-            recent_messages = messages[:-1][-3:]
-            if recent_messages:
-                full_prompt += "이전 대화 요약:\n"
-                for msg in recent_messages:
-                    role = "사용자" if msg["role"] == "user" else "AI"
-                    # 내용이 너무 길면 자르기
-                    content = msg["content"]
-                    if len(content) > 200:
-                        content = content[:197] + "..."
-                    full_prompt += f"{role}: {content}\n\n"
+        # 도구 설명과 이름 가져오기
+        tool_descriptions = [
+            f"Tool: {tool.name}\nDescription: {tool.description}\n"
+            for tool in agent_executor.tools
+        ]
+        formatted_tools = "\n".join(tool_descriptions)
+        tool_names = [tool.name for tool in agent_executor.tools]
 
-        full_prompt += "현재 요청:\n"
+        config = {
+            "configurable": {"session_id": session_id},
+        }
 
-        # 현재 요청 추가
-        full_prompt += user_input
+        for attempt in range(MAX_RETRIES):
+            try:
+                result = agent_executor.invoke(
+                    {
+                        "input": full_prompt,
+                        "chat_history": state.get("messages", []),
+                        "tools": formatted_tools,
+                        "tool_names": ", ".join(tool_names),
+                        "agent_scratchpad": [],
+                    },
+                    config=config,
+                )
+                break
+            except APIStatusError as e:
+                if "overloaded_error" in str(e) and attempt < MAX_RETRIES - 1:
+                    logger.warning(
+                        f"API 과부하 오류 발생. {RETRY_DELAY}초 후 재시도... (시도 {attempt + 1}/{MAX_RETRIES})"
+                    )
+                    time.sleep(RETRY_DELAY)
+                    continue
+                raise
 
-        if context:
-            additional_info = ""
-            for key, value in context.items():
-                if value:
-                    additional_info += f"\n- {key}: {value}"
+        # 도구 실행 결과 추적
+        intermediate_steps = result.get("intermediate_steps", [])
+        print("[DEBUG] intermediate_steps:", intermediate_steps)
 
-            if additional_info:
-                full_prompt += f"\n\n추가 정보:{additional_info}"
+        executed_tool_inputs = set()
+        tool_executions = []
 
-        agent_executor, tool_usage_callback = get_itinerary_node_agent(llm, session_id)
-
-        # 중간 단계 추적 옵션 추가
-        result = agent_executor.invoke(
-            {"input": full_prompt}, {"return_intermediate_steps": True}
-        )
-
-        # 도구 사용 정보 확인
-        tool_usage = tool_usage_callback.get_tool_usage()
-        logger.info(f"도구 사용 내역: {tool_usage}")
-
-        # 도구 사용 결과를 상태에 저장
-        state["tool_usage"] = tool_usage
-
-        # 결과가 딕셔너리면 'output' 필드 확인
-        # 중간 단계 추적 옵션 추가
-        if isinstance(result, dict) and "output" in result:
-            output = result["output"]
-
-            # output이 JSON 문자열 형태(도구 호출 액션)인지 확인
-            if isinstance(output, str) and output.startswith('{"action":'):
-                logger.info("도구 호출 응답을 감지했습니다. 최종 응답 생성 중...")
-
-                # 기존 대화 기록과 도구 호출 결과를 포함하여 최종 응답 생성 요청
-                last_tool_result = None
-                if "intermediate_steps" in result and result["intermediate_steps"]:
-                    last_action, last_output = result["intermediate_steps"][-1]
-                    last_tool_result = f"도구 이름: {last_action.tool}\n도구 입력: {last_action.tool_input}\n도구 결과: {last_output}"
-
-                # 최종 응답 생성 요청
-                final_prompt = f"""이전에 도구 호출을 수행했습니다. 이제 사용자의 질문에 대한 최종 답변을 생성해주세요.
-                원래 사용자 요청: {full_prompt}
-                {last_tool_result if last_tool_result else ''}
-                """
-
-                # 최종 응답 생성
-                final_response = llm.invoke(final_prompt).content
-
-                # 응답 저장
+        for action, output in intermediate_steps:
+            key = (action.tool, str(action.tool_input))
+            if key in executed_tool_inputs:
+                final_response = "동일한 도구를 반복해서 사용하여 일정을 종료합니다."
                 state["messages"].append(
                     {"role": "assistant", "content": final_response}
                 )
                 return {**state, "response": final_response}
-            else:
-                # 일반 응답인 경우
-                response = output
-        else:
-            # 결과가 딕셔너리가 아니면 문자열로 변환
-            response = str(result)
+            executed_tool_inputs.add(key)
+            tool_executions.append(
+                {"tool": action.tool, "input": action.tool_input, "output": output}
+            )
+            print(f"[DEBUG] 도구 실행 결과: {action.tool} - {output}")
 
-        final_response = response
+        state["tool_executions"] = tool_executions
 
         if "tool_usage" in state and state["tool_usage"]:
             tool_usage_text = "\n\n[도구 사용 내역]\n"
@@ -130,9 +112,25 @@ def itinerary_node(llm: ChatAnthropic, state: ItineraryState) -> ItineraryState:
                     tool_usage_text += f"   출력: {usage['output']}\n"
             print(f"도구 사용 내역: {tool_usage_text}")
 
-        # 응답 저장
-        state["messages"].append({"role": "assistant", "content": final_response})
-        return {**state, "response": final_response}
+        # 최종 응답 결정
+        output = result.get("output", "")
+        if isinstance(output, str):
+            if "Action: FinalAnswer" in output:
+                # 최종 답변이면 Action Input 추출
+                match = re.search(r"Action Input:\s*(.+)", output, re.DOTALL)
+                if match:
+                    final_answer = match.group(1).strip()
+                    state["messages"].append(
+                        {"role": "assistant", "content": final_answer}
+                    )
+                    return {**state, "response": final_answer}
+            else:
+                # 일반 텍스트 응답
+                state["messages"].append({"role": "assistant", "content": output})
+                return {**state, "response": output}
+        else:
+            state["messages"].append({"role": "assistant", "content": str(output)})
+            return {**state, "response": str(output)}
 
     except Exception as e:
         logger.error(f"General error: {str(e)}")
@@ -144,15 +142,25 @@ def itinerary_node(llm: ChatAnthropic, state: ItineraryState) -> ItineraryState:
         return {**state, "response": error_response}
 
 
-def get_itinerary_node_agent(llm: ChatAnthropic, session_id: str) -> Dict[str, Any]:
+def get_itinerary_node_agent(
+    llm_client: BaseLLMClient, state: ItineraryState
+) -> Dict[str, Any]:
     kakao_place_search_service = KakaoPlaceSearchService(
-        KakaoPlaceClient(os.getenv("KAKAO_REST_KEY"))
+        KakaoPlaceClient(
+            os.getenv("KAKAO_REST_KEY", "7582a0567cfa228ec8c38f2e3dafe03a")
+        )
     )
-    place_search_tool = PlaceSearchTool(kakao_place_search_service)
+    place_search_tools = get_place_search_tools(kakao_place_search_service)
 
-    memory = session_manage_service.get_session_memory(session_id)
+    google_calendar_service = GoogleCalendarService(
+        GoogleCalendarClient(
+            os.getenv("GOOGLE_CALENDAR_ID"),
+            os.getenv("GOOGLE_CREDENTIALS_PATH"),
+        )
+    )
+    calendar_tools = get_calendar_tools(google_calendar_service)
 
-    tools = place_search_tool.get_langchain_tools()
+    tools = place_search_tools + calendar_tools
     tool_descriptions = [
         f"Tool: {tool.name}\nDescription: {tool.description}\n" for tool in tools
     ]
@@ -160,37 +168,68 @@ def get_itinerary_node_agent(llm: ChatAnthropic, session_id: str) -> Dict[str, A
     tool_names = [tool.name for tool in tools]
 
     system_prompt = prompt_service.get_system_prompt(
-        str(PROMPT_DIR / "itinerary/v1.yaml")
+        str(PROMPT_DIR / "itinerary/v1.yaml"),
     )
-
-    agent = (
-        {
-            "input": lambda x: x["input"],
-            "chat_history": lambda x: x.get("chat_history", []),
-            "agent_scratchpad": lambda x: format_to_openai_function_messages(
-                x.get("intermediate_steps", [])
-            ),
-            "tools": lambda x: formatted_tools,
-            "tool_names": lambda x: ", ".join(tool_names),
-        }
-        | system_prompt
-        | llm
-        | OpenAIFunctionsAgentOutputParser()
+    system_prompt = system_prompt.partial(
+        tools=formatted_tools,
+        tool_names=", ".join(tool_names),
     )
-
-    # 도구 사용 추적 콜백 추가
-    tool_usage_callback = ToolUsageCallbackHandler()
+    agent = create_structured_chat_agent(
+        llm=llm_client.get_llm(), tools=tools, prompt=system_prompt
+    )
 
     agent_executor = AgentExecutor(
         agent=agent,
         tools=tools,
-        memory=memory,
+        memory=ConversationBufferMemory(
+            memory_key="chat_history",
+            return_messages=True,
+            input_key="input",
+            output_key="output",
+        ),
         verbose=True,
         handle_parsing_errors=True,
-        max_iterations=10,
+        max_iterations=15,
         max_execution_time=None,
         early_stopping_method="force",
-        return_intermediate_steps=True,  # 중간 단계 결과 반환 추가
     )
 
-    return agent_executor, tool_usage_callback
+    return agent_executor
+
+
+def _get_full_prompt(state: ItineraryState) -> str:
+    user_input = state.get("user_input", "")
+    context = state.get("context", {})
+    messages = state.get("messages", [])
+
+    full_prompt = ""
+
+    if not messages:
+        messages.append({"role": "system", "content": "여행 일정을 도와드릴게요."})
+    messages.append({"role": "user", "content": user_input})
+
+    if len(messages) > 1:
+        recent_messages = messages[:-1][-3:]
+        if recent_messages:
+            full_prompt += "이전 대화 요약:\n"
+            for msg in recent_messages:
+                role = "사용자" if msg["role"] == "user" else "AI"
+                content = msg["content"]
+                if len(content) > 200:
+                    content = content[:197] + "..."
+                full_prompt += f"{role}: {content}\n\n"
+
+    if context:
+        additional_info = ""
+        for key, value in context.items():
+            if value:
+                additional_info += f"\n- {key}: {value}"
+
+        if additional_info:
+            full_prompt += f"\n\n추가 정보:{additional_info}"
+
+    full_prompt += "현재 요청:\n"
+
+    full_prompt += user_input
+
+    return full_prompt

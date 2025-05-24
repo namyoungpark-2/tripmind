@@ -2,7 +2,7 @@
 
 ## 개요
 
-Itinerary Agent는 TripMind의 핵심 여행 일정 생성 모듈로, 사용자의 요구사항을 분석하여 맞춤형 여행 일정을 생성하고 관리하는 지능형 에이전트입니다. LangGraph와 LangChain을 활용하여 구현되었으며, Anthropic의 Claude 3 Opus 모델을 기반으로 합니다.
+Itinerary Agent는 TripMind의 핵심 여행 일정 생성 모듈로, LangGraph와 LangChain을 활용하여 구현된 사용자의 요구사항을 분석하여 맞춤형 여행 일정을 생성하고 관리하는 에이전트
 
 ## 주요 기능
 
@@ -31,7 +31,7 @@ Itinerary Agent는 TripMind의 핵심 여행 일정 생성 모듈로, 사용자�
 
 #### LLM 통합
 
-- Anthropic Claude 3 Opus 모델 활용
+- 환경 변수 기반 LLM 모델 관리
 - 환경 변수 기반 API 키 관리
 - 모델 초기화 및 관리
 
@@ -48,12 +48,6 @@ Itinerary Agent는 TripMind의 핵심 여행 일정 생성 모듈로, 사용자�
 - 추가 정보 수집
 - 사용자 선호도 파악
 - 여행 요구사항 상세화
-
-#### Place Search Node
-
-- 장소 검색 및 추천
-- 카카오 API 연동
-- 장소 정보 수집
 
 #### Calendar Node
 

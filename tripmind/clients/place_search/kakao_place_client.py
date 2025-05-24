@@ -15,11 +15,7 @@ class KakaoPlaceClient(BasePlaceSearchClient):
         self,
         api_key: str,
     ):
-        # API 키 설정 및 검증
-        # self.api_key = os.getenv("KAKAO_REST_KEY")
-
         self.api_key = api_key
-        # 디버깅용: API 키 확인 (첫 4자와 마지막 4자만 표시)
         if self.api_key:
             masked_key = f"{self.api_key[:4]}...{self.api_key[-4:]}"
             logger.info(f"[DEBUG] Using Kakao API Key: {masked_key}")
@@ -30,15 +26,13 @@ class KakaoPlaceClient(BasePlaceSearchClient):
         self.headers = {"Authorization": f"KakaoAK {self.api_key}"}
 
     def search_keyword(
-        self, keyword: str, page: int = 1, size: int = 15
+        self, keyword: str, page: int = 1, size: int = 10
     ) -> Dict[str, Any]:
-        """
-        키워드로 장소 검색
-        """
         url = f"{KAKAO_BASE_URL}/search/keyword.json"
         params = {"query": keyword, "page": page, "size": size}
 
         try:
+            print(f"kakao request: {url}, {self.headers}, {params}")
             response = requests.get(url, headers=self.headers, params=params)
             response.raise_for_status()
             return response.json()
@@ -49,9 +43,6 @@ class KakaoPlaceClient(BasePlaceSearchClient):
     def search_category(
         self, category_group_code: str, x: str, y: str, radius: int = 1000
     ) -> Dict[str, Any]:
-        """
-        카테고리로 장소 검색
-        """
         url = f"{KAKAO_BASE_URL}/search/category.json"
         params = {
             "category_group_code": category_group_code,
@@ -66,9 +57,6 @@ class KakaoPlaceClient(BasePlaceSearchClient):
         return response.json()
 
     def search_address(self, address: str) -> Dict[str, Any]:
-        """
-        주소로 좌표 검색
-        """
         url = f"{KAKAO_BASE_URL}/search/address.json"
         params = {"query": address}
 
@@ -77,10 +65,13 @@ class KakaoPlaceClient(BasePlaceSearchClient):
 
         return response.json()
 
-    def get_place_detail(self, place_id: str) -> Dict[str, Any]:
-        """장소 상세 정보 API 호출 (로우레벨)"""
-        url = f"{KAKAO_BASE_URL}/search/category.json"
-        params = {"category_group_code": place_id}
+    def get_place_detail(self, place_name: str, x: str, y: str) -> Dict[str, Any]:
+        url = f"{KAKAO_BASE_URL}/search/keyword.json"
+        params = {
+            "query": place_name,
+            "x": x,
+            "y": y,
+        }
 
         response = requests.get(url, headers=self.headers, params=params)
         response.raise_for_status()

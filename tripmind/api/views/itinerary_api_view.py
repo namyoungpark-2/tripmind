@@ -5,6 +5,10 @@ from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.models import User
 from django.utils import timezone
+from tripmind.agents.common.types.agent_executor_type import AgentExecutorResult
+from tripmind.agents.place_search.place_search_agent_executor import (
+    PlaceSearchAgentExecutor,
+)
 from tripmind.api.serializers.itinerary_serializer import (
     ItineraryModelSerializer,
     MessageSerializer,
@@ -15,7 +19,6 @@ from tripmind.api.serializers.itinerary_serializer import (
     ExternalShareSerializer,
 )
 from tripmind.models.itinerary import Itinerary, SharedItinerary
-from tripmind.services.session.session_manage_service import session_manage_service
 from tripmind.services.itinerary.itinerary_service import ItineraryService
 from tripmind.agents.itinerary.itinerary_agent_executor import ItineraryAgentExecutor
 from tripmind.agents.conversation.conversation_agent_executor import (
@@ -46,13 +49,16 @@ class ItineraryAPIView(APIView):
         )
 
         # 세션 가져오기 또는 생성
-        session = session_manage_service.get_or_create_session(session_id)
         prompt = serializer.validated_data["message"]
         prompt_router_agent_executor = PromptRouterAgentExecutor()
-        router_result = prompt_router_agent_executor.process_prompt(
-            prompt=prompt,
-            session_id=session_id,
+
+        router_result: AgentExecutorResult = (
+            prompt_router_agent_executor.process_prompt(
+                prompt=prompt,
+                session_id=session_id,
+            )
         )
+        print("router_result", router_result)
         intent = router_result["intent"]
         next_node = router_result["next_node"]
 
@@ -61,24 +67,14 @@ class ItineraryAPIView(APIView):
         if intent == Intent.ITINERARY.value:
             print("여행 일정 전문 에이전트 실행")
             agent_executor = ItineraryAgentExecutor()
+        elif intent == Intent.PLACE_SEARCH.value:
+            print("장소 검색에이전트 실행")
+            agent_executor = PlaceSearchAgentExecutor()
         else:
             print("일반 대화 에이전트 실행")
             agent_executor = ConversationAgentExecutor()
 
-        # LangGraph 서비스 초기화
         itinerary_service = ItineraryService(agent_executor)
-
-        # 이전 대화 기록 가져오기 (Streamlit에서 전달한 경우)
-        # message_history = request.data.get("history", [])
-
-        # # 대화 기록이 있으면 세션에 메시지 복원
-        # for history_msg in message_history:
-        #     if "role" in history_msg and "content" in history_msg:
-        #         conversation_history_service.save_message(
-        #             session=session,
-        #             role=history_msg["role"],
-        #             content=history_msg["content"],
-        #         )
 
         # 멀티 에이전트 처리
         result = itinerary_service.process_message(
@@ -86,6 +82,12 @@ class ItineraryAPIView(APIView):
             message=serializer.validated_data["message"],
             start_node=next_node,
         )
+
+        # conversation_history_service.save_conversation(
+        #     session_id,
+        #     serializer.validated_data["message"],
+        #     result.get("response", "응답을 생성하지 못했습니다."),
+        # )
 
         return Response(result, status=status.HTTP_200_OK)
 

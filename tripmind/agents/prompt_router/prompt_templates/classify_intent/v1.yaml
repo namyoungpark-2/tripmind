@@ -1,0 +1,20 @@
+id: classify-intent-v1
+description: 사용자의 메시지를 분석하여 다음 중 하나의 목적을 선택하는 프롬프트
+model: { model }
+template: |
+  사용자의 메시지를 분석하여 다음 중 하나의 목적을 선택하세요:
+
+  {intent_descriptions}
+
+  메시지: {input}
+
+  * 중요 *
+  * 주의 *
+  응답은 반드시 위 형식을 따라야 합니다.
+  앞 뒤로 다른 어떠한 문자도 포함시키지 마세요.
+
+  ```
+  {{
+      "intent": "conversation"
+  }}
+  ```
