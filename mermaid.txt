@@ -1,0 +1,110 @@
+---- 기본 아키텍처 구조 ----
+graph LR
+    subgraph Frontend[프론트엔드]
+        F1[Streamlit UI]
+    end
+
+    subgraph Backend[백엔드]
+        B1[Django + DRF]
+        B2[LangGraph]
+        B3[LangChain]
+    end
+
+    subgraph External[외부 서비스]
+        E1[Anthropic Claude]
+        E2[Ollama Llama3]
+        E3[Kakao API]
+        E4[Google Calendar]
+    end
+
+    F1 --> B1
+    B1 --> B2
+    B2 --> B3
+    B3 --> E1 & E2
+    B1 --> E3 & E4
+
+
+
+---- Tripmind 아키텍처 구조 ----
+graph TD
+    subgraph DataFlow[데이터 흐름]
+        D1[사용자 입력] --> D2[의도 분석]
+        D2 --> D3{의도 분류}
+        D3 -->|일정 생성| D4[Itinerary Agent]
+        D3 -->|장소 검색| D5[Place Search Agent]
+        D3 -->|캘린더| D6[Calendar Agent]
+        D3 -->|공유| D7[Sharing Agent]
+        D3 -->|일반 대화| D8[Conversation Agent]
+        D4 & D5 & D6 & D7 & D8 --> D9[응답 생성]
+        D9 --> D10[스트리밍 응답]
+    end
+
+
+---- 데이터 흐름 ----
+graph TD
+    subgraph DataFlow[데이터 흐름]
+        D1[사용자 입력] --> D2[의도 분석]
+        D2 --> D3{의도 분류}
+        D3 -->|일정 생성| D4[Itinerary Agent]
+        D3 -->|장소 검색| D5[Place Search Agent]
+        D3 -->|캘린더| D6[Calendar Agent]
+        D3 -->|공유| D7[Sharing Agent]
+        D3 -->|일반 대화| D8[Conversation Agent]
+        D4 & D5 & D6 & D7 & D8 --> D9[응답 생성]
+        D9 --> D10[스트리밍 응답]
+    end
+
+---- 전체 프로젝트 계층 구조 -----
+graph TB
+    subgraph UI[Streamlit UI]
+        UI1[사용자 입력]
+        UI2[스트리밍 응답]
+    end
+
+    subgraph API[Django API Layer]
+        API1[ItineraryAPIView]
+        API2[StreamingHttpResponse]
+    end
+
+    subgraph Router[Prompt Router]
+        R1[의도 분석]
+        R2[에이전트 라우팅]
+    end
+
+    subgraph Agents[에이전트 계층]
+        A1[Conversation Agent]
+        A2[Itinerary Agent]
+        A3[Place Search Agent]
+        A4[Calendar Agent]
+        A5[Sharing Agent]
+    end
+
+    subgraph Services[서비스 계층]
+        S1[ItineraryService]
+        S2[PlaceSearchService]
+        S3[CalendarService]
+        S4[SharingService]
+        S5[SessionService]
+    end
+
+    subgraph Clients[외부 API 클라이언트]
+        C1[Claude Client]
+        C2[Ollama Client]
+        C3[Kakao API Client]
+        C4[Google Calendar Client]
+    end
+
+    subgraph Models[데이터 모델]
+        M1[Itinerary]
+        M2[Session]
+        M3[User]
+    end
+
+    UI1 --> API1
+    API1 --> R1
+    R1 --> R2
+    R2 --> A1 & A2 & A3 & A4 & A5
+    A1 & A2 & A3 & A4 & A5 --> S1 & S2 & S3 & S4 & S5
+    S1 & S2 & S3 & S4 & S5 --> C1 & C2 & C3 & C4
+    S1 & S2 & S3 & S4 & S5 --> M1 & M2 & M3
+    API2 --> UI2
