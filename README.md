@@ -117,24 +117,12 @@ python manage.py test tests/integration
 ## 📚 문서
 
 - [아키텍처 문서](architecture.md)
-- [API 문서](api/README.md)
-- [에이전트 문서](agents/README.md)
 
-## 🤝 기여하기
+각 Agent 별
 
-1. Fork the Project
-2. Create your Feature Branch
-3. Commit your Changes
-4. Push to the Branch
-5. Open a Pull Request
-
-## 📄 라이선스
-
-이 프로젝트는 MIT 라이선스 하에 배포됩니다.
-
-## 🙏 감사의 말
-
-- Anthropic의 Claude API
-- Kakao의 장소 검색 API
-- Google Calendar API
-- LangChain & LangGraph 팀
+- [calendar](tripmind/agents/calendar/README.md)
+- [conversation](tripmind/agents/conversation/README.md)
+- [itinerary](tripmind/agents/itinerary/README.md)
+- [place_search](tripmind/agents/place_search/README.md)
+- [prompt_router](tripmind/agents/prompt_router/README.md)
+- [sharing](tripmind/agents/sharing/README.md)
