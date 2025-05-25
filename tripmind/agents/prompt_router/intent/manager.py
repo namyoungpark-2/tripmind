@@ -38,7 +38,6 @@ class IntentPatternManager:
                     "찾아줘",
                     "검색해줘",
                     "어디",
-                    "알려줘",
                     "근처",
                     "주변",
                 ],
@@ -78,11 +77,7 @@ class IntentPatternManager:
 
         # 캘린더 의도 확인
         if self._patterns["calendar"].matches(text):
-            return Intent.ITINERARY.value
-
-        # 장소 검색 의도 확인
-        if self._patterns["place_search"].matches(text):
-            return Intent.PLACE_SEARCH.value
+            return Intent.CALENDAR.value
 
         # 일정 공유 의도 확인
         if self._patterns["sharing"].matches(text):
@@ -91,6 +86,10 @@ class IntentPatternManager:
         # 일정 생성 의도 확인
         if self._patterns["itinerary"].matches(text):
             return Intent.ITINERARY.value
+
+        # 장소 검색 의도 확인
+        if self._patterns["place_search"].matches(text):
+            return Intent.PLACE_SEARCH.value
 
         # 인사 의도 확인
         if self._patterns["greeting"].matches(text):

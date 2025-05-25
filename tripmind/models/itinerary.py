@@ -17,7 +17,7 @@ class Itinerary(models.Model):
     itinerary_plan = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
+    date = models.DateTimeField(editable=True, default=timezone.now)
     share_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     is_public = models.BooleanField(default=False)
     share_expires_at = models.DateTimeField(null=True, blank=True)
@@ -35,7 +35,7 @@ class Itinerary(models.Model):
         return f"{self.destination} - {self.duration}"
 
     def get_share_url(self):
-        return f"/itinerary/share/{self.share_id}"
+        return f"http://localhost:8000/api/tripmind/itinerary/share/{self.share_id}"
 
     def create_share_link(self, days=7, share_type="VIEW"):
         self.is_public = True

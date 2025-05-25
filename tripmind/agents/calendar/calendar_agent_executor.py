@@ -1,10 +1,10 @@
-from .types.sharing_state_type import SharingRouterState
+from .types.calendar_state_type import CalendarState
 from ..common.types.agent_executor_type import AgentExecutorResult, BaseAgentExcutor
 from tripmind.services.session.session_manage_service import session_manage_service
-from .sharing_agent_graph import sharing_agent_graph
+from .calendar_agent_graph import calendar_agent_graph
 
 
-class SharingRouterAgentExecutor(BaseAgentExcutor):
+class CalendarRouterAgentExecutor(BaseAgentExcutor):
     def process_prompt(
         self,
         prompt: str,
@@ -13,13 +13,13 @@ class SharingRouterAgentExecutor(BaseAgentExcutor):
     ):
         try:
             state, config = session_manage_service.get_session_state_and_config(
-                sharing_agent_graph, prompt, start_node, session_id
+                calendar_agent_graph, prompt, start_node, session_id
             )
 
-            sharing_agent_state = SharingRouterState(**state)
+            calendar_agent_state = CalendarState(**state)
 
-            for result in sharing_agent_graph.stream(
-                sharing_agent_state, config=config
+            for result in calendar_agent_graph.stream(
+                calendar_agent_state, config=config
             ):
                 if result:
                     for node_name, node_state in result.items():

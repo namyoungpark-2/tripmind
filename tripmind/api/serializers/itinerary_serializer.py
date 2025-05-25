@@ -94,8 +94,6 @@ class SharedItinerarySerializer(serializers.ModelSerializer):
 
 
 class PublicShareSettingSerializer(serializers.Serializer):
-    """공개 공유 설정 시리얼라이저"""
-
     is_public = serializers.BooleanField(required=True)
     share_type = serializers.ChoiceField(
         choices=Itinerary.SHARE_TYPE_CHOICES, default="VIEW"
@@ -106,8 +104,6 @@ class PublicShareSettingSerializer(serializers.Serializer):
 
 
 class ExternalShareSerializer(serializers.Serializer):
-    """외부 공유 정보 시리얼라이저"""
-
     share_url = serializers.URLField(read_only=True)
     expires_at = serializers.DateTimeField(read_only=True)
     share_type = serializers.CharField(read_only=True)

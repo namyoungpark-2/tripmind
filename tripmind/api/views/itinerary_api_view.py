@@ -1,6 +1,7 @@
 import json
 from django.http import StreamingHttpResponse
 from django.views import View
+from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -10,6 +11,7 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from tripmind.agents.sharing.sharing_agent_executor import SharingRouterAgentExecutor
+from tripmind.agents.calendar.calendar_agent_executor import CalendarRouterAgentExecutor
 from tripmind.agents.place_search.place_search_agent_executor import (
     PlaceSearchAgentExecutor,
 )
@@ -98,6 +100,8 @@ class ItineraryAPIView(View):
             return PlaceSearchAgentExecutor()
         elif intent == Intent.SHARING.value:
             return SharingRouterAgentExecutor()
+        elif intent == Intent.CALENDAR.value:
+            return CalendarRouterAgentExecutor()
         else:
             return ConversationAgentExecutor()
 
@@ -118,16 +122,6 @@ class ItineraryAPIView(View):
                 "context": {},
             }
             yield f"data: {json.dumps(error_response)}\n\n"
-
-
-# LLM multi Agent 에서 사용되는 것이 아니라 별도의 API로 사용될 수 있는 List
-# 해당 서버가 아닌 별도의 JAVA Web Server 에서 동작하도록 구현하여 서비스를 나누면 좋을 것 같음
-# 하위 API View들은 추후에 동작하도록 구현될 view List
-# 일정 상세 조회/수정/삭제 API
-# 일정 공유 API
-# 일정 공유 해제 API
-# 일정 공개 공유 설정 API
-# 공개된 여행 일정 조회 API
 
 
 class ItineraryDetailAPIView(View):
@@ -220,23 +214,17 @@ class ItineraryShareRemoveAPIView(View):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class ItineraryPublicShareAPIView(View):
-    """여행 일정 공개 공유 설정 API"""
-
-    permission_classes = [IsAuthenticated]
-
+class ItineraryPublicShareAPIView(APIView):
     def post(self, request, itinerary_id, *args, **kwargs):
-        """일정 공개 여부 설정"""
-        itinerary = get_object_or_404(Itinerary, id=itinerary_id, user=request.user)
+        user = User.objects.get(id=1)
+        itinerary = get_object_or_404(Itinerary, id=itinerary_id, user=user)
         serializer = PublicShareSettingSerializer(data=request.data)
 
         if serializer.is_valid():
-            # 공유 설정 업데이트
             is_public = serializer.validated_data["is_public"]
             share_type = serializer.validated_data["share_type"]
             expires_in_days = serializer.validated_data.get("expires_in_days", 7)
 
-            # 공유 중지 설정
             if not is_public:
                 itinerary.is_public = False
                 itinerary.share_type = "NONE"
@@ -244,25 +232,18 @@ class ItineraryPublicShareAPIView(View):
                 itinerary.save()
                 return Response({"message": "공유가 중지되었습니다."})
 
-            # 공유 링크 생성
             share_url = itinerary.create_share_link(
                 days=expires_in_days, share_type=share_type
             )
 
-            # 응답 데이터 구성
             response_data = {
-                "share_url": request.build_absolute_uri(
-                    f"/api/tripmind/share/itinerary/{itinerary.share_id}/"
-                ),
+                "share_url": share_url,
                 "expires_at": itinerary.share_expires_at,
                 "share_type": itinerary.share_type,
                 "is_valid": True,
             }
-
-            response_serializer = ExternalShareSerializer(data=response_data)
-            if response_serializer.is_valid():
-                return Response(response_serializer.data)
-            return Response(response_data)
+            response_serializer = ExternalShareSerializer(instance=response_data)
+            return Response(response_serializer.data)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

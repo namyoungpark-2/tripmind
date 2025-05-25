@@ -1,0 +1,115 @@
+2025-05-25 03:19:00,500 [ERROR] tripmind.agents.sharing.nodes.sharing_node:104 - 공유 노드 처리 오류: 'NoneType' object is not a mapping
+2025-05-25 03:19:00,500 [ERROR] tripmind.agents.sharing.nodes.sharing_node:105 - 전체 오류:
+Traceback (most recent call last):
+  File "/Users/namyoungpark/kakao-tripmind/tripmind/tripmind/agents/sharing/nodes/sharing_node.py", line 21, in sharing_node
+    share_request = validate_share_request(share_request)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/namyoungpark/kakao-tripmind/tripmind/tripmind/agents/sharing/utils/validator.py", line 8, in validate_share_request
+    validated = {**share_info}
+                ^^^^^^^^^^^^^^
+TypeError: 'NoneType' object is not a mapping
+2025-05-25 03:19:00,501 [ERROR] tripmind.agents.common.nodes.node_wrapper:47 - sharing_node 오류: 'NoneType' object is not a mapping
+2025-05-25 03:19:34,116 [ERROR] tripmind.agents.sharing.nodes.sharing_node:105 - 공유 노드 처리 오류: 'NoneType' object is not a mapping
+2025-05-25 03:19:34,116 [ERROR] tripmind.agents.sharing.nodes.sharing_node:106 - 전체 오류:
+Traceback (most recent call last):
+  File "/Users/namyoungpark/kakao-tripmind/tripmind/tripmind/agents/sharing/nodes/sharing_node.py", line 22, in sharing_node
+    share_request = validate_share_request(share_request)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/namyoungpark/kakao-tripmind/tripmind/tripmind/agents/sharing/utils/validator.py", line 8, in validate_share_request
+    validated = {**share_info}
+                ^^^^^^^^^^^^^^
+TypeError: 'NoneType' object is not a mapping
+2025-05-25 03:19:34,117 [ERROR] tripmind.agents.common.nodes.node_wrapper:47 - sharing_node 오류: 'NoneType' object is not a mapping
+2025-05-25 03:40:40,240 [ERROR] tripmind.agents.itinerary.nodes.itinerary_node:118 - General error: final_response_tool_fn() got an unexpected keyword argument 'title'
+2025-05-25 03:40:40,242 [ERROR] tripmind.agents.itinerary.nodes.itinerary_node:119 - Full stack trace:
+Traceback (most recent call last):
+  File "/Users/namyoungpark/kakao-tripmind/tripmind/tripmind/agents/itinerary/nodes/itinerary_node.py", line 70, in itinerary_node
+    result = agent_executor.invoke(
+             ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/namyoungpark/.pyenv/versions/3.12.2/lib/python3.12/site-packages/langchain/chains/base.py", line 167, in invoke
+    raise e
+  File "/Users/namyoungpark/.pyenv/versions/3.12.2/lib/python3.12/site-packages/langchain/chains/base.py", line 157, in invoke
+    self._call(inputs, run_manager=run_manager)
+  File "/Users/namyoungpark/.pyenv/versions/3.12.2/lib/python3.12/site-packages/langchain/agents/agent.py", line 1620, in _call
+    next_step_output = self._take_next_step(
+                       ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/namyoungpark/.pyenv/versions/3.12.2/lib/python3.12/site-packages/langchain/agents/agent.py", line 1326, in _take_next_step
+    [
+  File "/Users/namyoungpark/.pyenv/versions/3.12.2/lib/python3.12/site-packages/langchain/agents/agent.py", line 1411, in _iter_next_step
+    yield self._perform_agent_action(
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/namyoungpark/.pyenv/versions/3.12.2/lib/python3.12/site-packages/langchain/agents/agent.py", line 1433, in _perform_agent_action
+    observation = tool.run(
+                  ^^^^^^^^^
+  File "/Users/namyoungpark/.pyenv/versions/3.12.2/lib/python3.12/site-packages/langchain_core/tools/base.py", line 774, in run
+    raise error_to_raise
+  File "/Users/namyoungpark/.pyenv/versions/3.12.2/lib/python3.12/site-packages/langchain_core/tools/base.py", line 743, in run
+    response = context.run(self._run, *tool_args, **tool_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/namyoungpark/.pyenv/versions/3.12.2/lib/python3.12/site-packages/langchain_core/tools/structured.py", line 93, in _run
+    return self.func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: final_response_tool_fn() got an unexpected keyword argument 'title'
+2025-05-25 03:40:40,246 [ERROR] tripmind.agents.common.nodes.node_wrapper:47 - <lambda> 오류: final_response_tool_fn() got an unexpected keyword argument 'title'
+2025-05-25 03:42:35,927 [ERROR] tripmind.agents.itinerary.nodes.itinerary_node:118 - General error: final_response_tool_fn() got an unexpected keyword argument 'title'
+2025-05-25 03:42:35,928 [ERROR] tripmind.agents.itinerary.nodes.itinerary_node:119 - Full stack trace:
+Traceback (most recent call last):
+  File "/Users/namyoungpark/kakao-tripmind/tripmind/tripmind/agents/itinerary/nodes/itinerary_node.py", line 70, in itinerary_node
+    result = agent_executor.invoke(
+             ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/namyoungpark/.pyenv/versions/3.12.2/lib/python3.12/site-packages/langchain/chains/base.py", line 167, in invoke
+    raise e
+  File "/Users/namyoungpark/.pyenv/versions/3.12.2/lib/python3.12/site-packages/langchain/chains/base.py", line 157, in invoke
+    self._call(inputs, run_manager=run_manager)
+  File "/Users/namyoungpark/.pyenv/versions/3.12.2/lib/python3.12/site-packages/langchain/agents/agent.py", line 1620, in _call
+    next_step_output = self._take_next_step(
+                       ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/namyoungpark/.pyenv/versions/3.12.2/lib/python3.12/site-packages/langchain/agents/agent.py", line 1326, in _take_next_step
+    [
+  File "/Users/namyoungpark/.pyenv/versions/3.12.2/lib/python3.12/site-packages/langchain/agents/agent.py", line 1411, in _iter_next_step
+    yield self._perform_agent_action(
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/namyoungpark/.pyenv/versions/3.12.2/lib/python3.12/site-packages/langchain/agents/agent.py", line 1433, in _perform_agent_action
+    observation = tool.run(
+                  ^^^^^^^^^
+  File "/Users/namyoungpark/.pyenv/versions/3.12.2/lib/python3.12/site-packages/langchain_core/tools/base.py", line 774, in run
+    raise error_to_raise
+  File "/Users/namyoungpark/.pyenv/versions/3.12.2/lib/python3.12/site-packages/langchain_core/tools/base.py", line 743, in run
+    response = context.run(self._run, *tool_args, **tool_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/namyoungpark/.pyenv/versions/3.12.2/lib/python3.12/site-packages/langchain_core/tools/structured.py", line 93, in _run
+    return self.func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: final_response_tool_fn() got an unexpected keyword argument 'title'
+2025-05-25 03:42:35,933 [ERROR] tripmind.agents.common.nodes.node_wrapper:47 - <lambda> 오류: final_response_tool_fn() got an unexpected keyword argument 'title'
+2025-05-25 03:44:32,580 [ERROR] tripmind.agents.itinerary.nodes.itinerary_node:118 - General error: final_response_tool_fn() got an unexpected keyword argument 'title'
+2025-05-25 03:44:32,581 [ERROR] tripmind.agents.itinerary.nodes.itinerary_node:119 - Full stack trace:
+Traceback (most recent call last):
+  File "/Users/namyoungpark/kakao-tripmind/tripmind/tripmind/agents/itinerary/nodes/itinerary_node.py", line 70, in itinerary_node
+    result = agent_executor.invoke(
+             ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/namyoungpark/.pyenv/versions/3.12.2/lib/python3.12/site-packages/langchain/chains/base.py", line 167, in invoke
+    raise e
+  File "/Users/namyoungpark/.pyenv/versions/3.12.2/lib/python3.12/site-packages/langchain/chains/base.py", line 157, in invoke
+    self._call(inputs, run_manager=run_manager)
+  File "/Users/namyoungpark/.pyenv/versions/3.12.2/lib/python3.12/site-packages/langchain/agents/agent.py", line 1620, in _call
+    next_step_output = self._take_next_step(
+                       ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/namyoungpark/.pyenv/versions/3.12.2/lib/python3.12/site-packages/langchain/agents/agent.py", line 1326, in _take_next_step
+    [
+  File "/Users/namyoungpark/.pyenv/versions/3.12.2/lib/python3.12/site-packages/langchain/agents/agent.py", line 1411, in _iter_next_step
+    yield self._perform_agent_action(
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/namyoungpark/.pyenv/versions/3.12.2/lib/python3.12/site-packages/langchain/agents/agent.py", line 1433, in _perform_agent_action
+    observation = tool.run(
+                  ^^^^^^^^^
+  File "/Users/namyoungpark/.pyenv/versions/3.12.2/lib/python3.12/site-packages/langchain_core/tools/base.py", line 774, in run
+    raise error_to_raise
+  File "/Users/namyoungpark/.pyenv/versions/3.12.2/lib/python3.12/site-packages/langchain_core/tools/base.py", line 743, in run
+    response = context.run(self._run, *tool_args, **tool_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/namyoungpark/.pyenv/versions/3.12.2/lib/python3.12/site-packages/langchain_core/tools/structured.py", line 93, in _run
+    return self.func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: final_response_tool_fn() got an unexpected keyword argument 'title'
+2025-05-25 03:44:32,586 [ERROR] tripmind.agents.common.nodes.node_wrapper:47 - <lambda> 오류: final_response_tool_fn() got an unexpected keyword argument 'title'

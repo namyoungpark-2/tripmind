@@ -5,42 +5,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def extract_travel_info(text: str) -> Dict[str, str]:
-    info = {
-        "destination": "",
-        "duration": "",
-        "travelers": "",
-        "budget": "",
-    }
-
-    destination_pattern = r"([가-힣a-zA-Z]+)[\s]?(?:지역)"
-    destination_match = re.search(destination_pattern, text)
-    if destination_match:
-        info["destination"] = destination_match.group(1)
-
-    duration_patterns = [
-        r"(\d+)[박]?\s?(\d+)?[일]?",
-        r"(\d+)[\s]?일[\s]?동안",
-        r"(\d+)[\s]?박[\s]?(\d+)[\s]?일",
-    ]
-
-    for pattern in duration_patterns:
-        duration_match = re.search(pattern, text)
-        if duration_match:
-            info["duration"] = duration_match.group(0)
-            break
-
-    travelers_match = re.search(r"(\d+)[\s]?명", text)
-    if travelers_match:
-        info["travelers"] = travelers_match.group(0)
-
-    budget_match = re.search(r"(\d+)[\s]?만원|(\d+)[\s]?원", text)
-    if budget_match:
-        info["budget"] = budget_match.group(0)
-
-    return info
-
-
 def extract_share_request(text: str) -> Optional[Dict[str, Any]]:
     share_patterns = [
         r"일정[\s]*(?:공유|공개)[\s]*(해줘|해 줘|할래|하자|부탁해|부탁|좀)",
@@ -56,6 +20,13 @@ def extract_share_request(text: str) -> Optional[Dict[str, Any]]:
 
     is_share_request = False
     matched_pattern = None
+
+    itinerary_ids = []
+    id_pattern = r"id가\s*(\d+(?:\s*,\s*\d+)*)"
+    match = re.search(id_pattern, text)
+    if match:
+        numbers = match.group(1).replace(" ", "")
+        itinerary_ids = [int(id) for id in numbers.split(",")]
 
     for pattern in share_patterns:
         match = re.search(pattern, text, re.IGNORECASE)
@@ -83,7 +54,7 @@ def extract_share_request(text: str) -> Optional[Dict[str, Any]]:
         days = min(max(1, days), 30)
         logger.info(f"공유 기간 설정: {days}일")
 
-    share_method = None
+    share_method = "URL"
     if re.search(r"(?:카톡|카카오톡)", text, re.IGNORECASE):
         share_method = "KAKAO"
     elif re.search(r"(?:메일|이메일|email)", text, re.IGNORECASE):
@@ -96,4 +67,5 @@ def extract_share_request(text: str) -> Optional[Dict[str, Any]]:
         "days": days,
         "share_method": share_method,
         "matched_pattern": matched_pattern,
+        "itinerary_ids": itinerary_ids,
     }

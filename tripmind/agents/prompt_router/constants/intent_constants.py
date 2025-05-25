@@ -57,11 +57,11 @@ INTENT_KEYWORDS = {
 
 # 의도와 노드 매핑
 INTENT_TO_NODE_MAP = {
-    Intent.ITINERARY: "ask_info_node",
+    Intent.ITINERARY: "router_node",
     Intent.CONVERSATION: "conversation_node",
     Intent.PLACE_SEARCH: "ask_info_node",
     Intent.SHARING: "sharing_node",
-    Intent.CALENDAR: "ask_info_node",
+    Intent.CALENDAR: "calendar_node",
     Intent.END: "end",
     Intent.UNKNOWN: "classify_intent_node",
     Intent.GREETING: "greeting_node",

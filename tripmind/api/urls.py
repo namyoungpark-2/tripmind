@@ -12,12 +12,13 @@ from tripmind.api.views.itinerary_api_view import (
 app_name = "tripmind"
 
 urlpatterns = [
+    path("itinerary/", ItineraryAPIView.as_view(), name="itinerary"),
+    # 하위 PATH는 현재 동작을 하지 않음.
     path(
         "conversation/",
         ConversationHistoryAPIView.as_view(),
         name="conversation-history",
     ),
-    path("itinerary/", ItineraryAPIView.as_view(), name="itinerary"),
     path(
         "itinerary/<int:itinerary_id>/",
         ItineraryDetailAPIView.as_view(),

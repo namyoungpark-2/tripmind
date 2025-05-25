@@ -10,7 +10,11 @@ logger = logging.getLogger(__name__)
 
 class SharingService:
     def create_share_link_api(
-        itinerary_id: int, share_type: str, days: int, base_url: str = None
+        self,
+        itinerary_id: int,
+        share_type: str,
+        days: int,
+        base_url: str = None,
     ) -> Dict[str, Any]:
         try:
             if not itinerary_id or not isinstance(itinerary_id, int):
@@ -34,7 +38,7 @@ class SharingService:
                 days = 7
 
             api_url = urljoin(
-                base_url or "http://localhost:8000",
+                base_url or "http://localhost:8000/",
                 f"/api/tripmind/itinerary/{itinerary_id}/public/",
             )
 

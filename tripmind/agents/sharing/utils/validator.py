@@ -28,10 +28,8 @@ def validate_share_request(share_info: Dict[str, Any]) -> Dict[str, Any]:
         )
         validated["days"] = 7
 
-    if validated.get("share_method") not in [None, "KAKAO", "EMAIL", "SMS"]:
-        logger.warning(
-            f"잘못된 공유 방식: {validated.get('share_method')}, None으로 설정"
-        )
-        validated["share_method"] = None
+    if validated.get("share_method") not in ["URL", "KAKAO", "EMAIL", "SMS"]:
+        logger.warning(f"잘못된 공유 방식: {validated.get('share_method')}, URL로 설정")
+        validated["share_method"] = "URL"
 
     return validated

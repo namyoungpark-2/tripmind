@@ -1,8 +1,9 @@
 from datetime import datetime
 from typing import Dict, Any, List
-
+from datetime import timedelta
 from tripmind.clients.calendar.google_calendar_client import GoogleCalendarClient
 from tripmind.services.calendar.base_calendar_service import BaseCalendarService
+from tripmind.models.itinerary import Itinerary
 
 
 class GoogleCalendarService(BaseCalendarService):
@@ -11,8 +12,15 @@ class GoogleCalendarService(BaseCalendarService):
     def __init__(self, calendar_client: GoogleCalendarClient):
         self.client = calendar_client
 
-    # def __init__(self, calendar_id: str, config_path: str):
-    #     self.client = GoogleCalendarClient(calendar_id, config_path)
+    def add_itinerary_to_calendar(self, itinerary: Itinerary) -> Dict[str, Any]:
+        return self.add_event(
+            itinerary.date,
+            itinerary.date,
+            itinerary.date + timedelta(days=1),
+            itinerary.title,
+            itinerary.destination,
+            "",
+        )
 
     def add_event(
         self,
@@ -23,8 +31,6 @@ class GoogleCalendarService(BaseCalendarService):
         location: str,
         description: str,
     ) -> Dict[str, Any]:
-        """캘린더에 이벤트 추가 (포트 메서드 구현)"""
-        # 도메인 데이터를 클라이언트 형식으로 변환
         start_datetime = f"{date}T{start_time}:00"
         end_datetime = f"{date}T{end_time}:00"
 
@@ -35,10 +41,10 @@ class GoogleCalendarService(BaseCalendarService):
             "start": {"dateTime": start_datetime, "timeZone": "Asia/Seoul"},
             "end": {"dateTime": end_datetime, "timeZone": "Asia/Seoul"},
         }
-        # 클라이언트 호출 및 결과 반환
+
+        print("event_data : ", event_data)
         result = self.client.create_event(event_data)
 
-        # 클라이언트 응답을 도메인 형식으로 변환
         return {
             "id": result.get("id"),
             "title": result.get("summary"),
@@ -50,15 +56,11 @@ class GoogleCalendarService(BaseCalendarService):
         }
 
     def list_events(self, start_date: str, end_date: str) -> List[Dict[str, Any]]:
-        """일정 기간의 이벤트 조회 (포트 메서드 구현)"""
-        # 날짜 형식 변환
         time_min = f"{start_date}T00:00:00Z"
         time_max = f"{end_date}T23:59:59Z"
 
-        # 클라이언트 호출
         raw_events = self.client.get_events(time_min, time_max)
 
-        # 클라이언트 응답을 도메인 형식으로 변환
         events = []
         for event in raw_events:
             start = event.get("start", {}).get("dateTime", "")

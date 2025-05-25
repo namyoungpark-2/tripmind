@@ -1,5 +1,6 @@
 import os
 import time
+import logging
 from tripmind.agents.itinerary.tools.calendar_tool import get_calendar_tools
 from tripmind.agents.itinerary.tools.place_search_tool import get_place_search_tools
 from tripmind.clients.calendar.google_calendar_client import GoogleCalendarClient
@@ -14,11 +15,11 @@ from tripmind.clients.place_search.kakao_place_client import KakaoPlaceClient
 from typing import Dict, Any, List
 from pathlib import Path
 from langchain.agents import AgentExecutor, create_structured_chat_agent
-import logging
 from tripmind.services.session.session_manage_service import session_manage_service
 from langchain.tools import StructuredTool
 from tripmind.agents.itinerary.tools.final_response_tool import FinalResponseTool
 from tripmind.services.sharing.sharing_service import sharing_service
+from tripmind.agents.sharing.utils.extract_info import extract_share_request
 
 logger = logging.getLogger(__name__)
 PROMPT_DIR = Path(__file__).parent / "../prompt_templates"
@@ -27,9 +28,6 @@ PROMPT_DIR = Path(__file__).parent / "../prompt_templates"
 def itinerary_node(llm_client: BaseLLMClient, state: ItineraryState) -> ItineraryState:
     try:
         session_id = state.get("config_data", {}).get("thread_id", "default")
-        previous_results = state.get("previous_results", {})
-        state["previous_results"] = previous_results
-
         memory = session_manage_service.get_session_memory(
             session_id,
             memory_key="chat_history",
@@ -74,6 +72,7 @@ def itinerary_node(llm_client: BaseLLMClient, state: ItineraryState) -> Itinerar
                 ),
                 "tools": tool_descriptions,
                 "tool_names": ", ".join(tool_names),
+                "agent_scratchpad": [],
             },
             config=config,
         )
@@ -83,12 +82,14 @@ def itinerary_node(llm_client: BaseLLMClient, state: ItineraryState) -> Itinerar
         else:
             response_text = str(result)
 
-        response_text = sharing_service.get_share_request(
-            state.get("user_input", ""),
-            response_text,
-            state.get("context", {}),
-            state.get("config_data", {}).get("base_url", "localhost:8000"),
-        )
+        share_request = extract_share_request(response_text)
+        if share_request:
+            response_text = sharing_service.get_share_request(
+                state.get("user_input", ""),
+                response_text,
+                state.get("context", {}),
+                state.get("config_data", {}).get("base_url", "localhost:8000"),
+            )
 
         state["streaming"] = {
             "message": response_text,
@@ -96,13 +97,8 @@ def itinerary_node(llm_client: BaseLLMClient, state: ItineraryState) -> Itinerar
             "is_complete": False,
         }
 
-        intermediate_steps = result.get("intermediate_steps", [])
-
         memory.save_context(
-            inputs={
-                memory.input_key: full_prompt,
-                "agent_scratchpad": intermediate_steps,
-            },
+            inputs={memory.input_key: full_prompt},
             outputs={memory.output_key: response_text},
         )
 
@@ -149,7 +145,7 @@ def create_itinerary_node_agent(
 ) -> Dict[str, Any]:
     session_id = state.get("config_data", {}).get("thread_id", "default")
     system_prompt = prompt_service.get_system_prompt(
-        str(PROMPT_DIR / "itinerary/v1.yaml"),
+        str(PROMPT_DIR / "itinerary/v3.yaml"),
     )
     system_prompt = system_prompt.partial(
         model=llm_client.get_llm().model,
@@ -170,7 +166,6 @@ def create_itinerary_node_agent(
         memory=memory,
         verbose=True,
         handle_parsing_errors=True,
-        max_iterations=15,
         max_execution_time=None,
         early_stopping_method="force",
     )

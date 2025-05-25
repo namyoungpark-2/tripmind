@@ -11,9 +11,9 @@ from langchain.agents import OpenAIFunctionsAgent
 class ClaudeClient(BaseLLMClient):
     def __init__(self):
         api_key = os.getenv("ANTHROPIC_API_KEY")
-        model = os.getenv("ANTHROPIC_MODEL", "claude-3-opus-20240229")
+        model = os.getenv("ANTHROPIC_MODEL", "claude-opus-4-20250514")
         self.llm: Optional[BaseLLM] = ChatAnthropic(
-            model=model, anthropic_api_key=api_key
+            model=model, anthropic_api_key=api_key, max_tokens=3000
         )
 
     def get_llm(self) -> BaseLLM:
